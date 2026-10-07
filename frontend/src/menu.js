@@ -12,4 +12,5 @@ export const MENU = [
   { to: '/vendors', label: 'Vendors', permission: 'vendor.view' },
   { to: '/funding-sources', label: 'Funding Sources', permission: 'funding_source.view' },
   { to: '/equipment-models', label: 'Equipment Models', permission: 'equipment_model.view' },
+  { to: '/documents', label: 'Documents', permission: 'document.view' },
 ]

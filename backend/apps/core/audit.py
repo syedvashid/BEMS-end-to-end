@@ -60,15 +60,18 @@ def _dumps(value):
     return json.dumps(redact(value), cls=DjangoJSONEncoder, sort_keys=True)
 
 
-def _request_info(request):
+def _request_info(request, actor=None):
     if request is None:
         return {}
     http = getattr(request, "_request", request)
     ctx = getattr(request, "bems", None)
-    try:
-        user = request.user
-    except Exception:
-        user = None
+    if actor is not None:
+        user = actor
+    else:
+        try:
+            user = request.user
+        except Exception:
+            user = None
     ip = http.META.get("REMOTE_ADDR")  # X-Forwarded-For is spoofable; trusted-proxy handling is a hardening item
     try:
         ip = str(ipaddress.ip_address(ip)) if ip else None
@@ -87,10 +90,10 @@ def _request_info(request):
 
 
 def record(*, action, request=None, facility_id=UNSET, entity_type=None, entity_public_id=None,
-           previous=None, new=None, changed_fields=None):
+           previous=None, new=None, changed_fields=None, actor=None):
     if not _ACTION_RE.match(action or ""):
         raise ValueError("Invalid audit action name.")
-    info = _request_info(request)
+    info = _request_info(request, actor)
     if facility_id is UNSET:
         facility_id = info.get("facility_id")
     with connection.cursor() as cur:

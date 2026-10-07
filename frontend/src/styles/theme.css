@@ -31,4 +31,17 @@
   --color-risk-low: #2e7d32;
   --color-risk-medium: #b26a00;
   --color-risk-high: #c62828;
+
+
+
+  /* phase 3*/
+   :root {
+  --doc-expired: #b42318;
+  --doc-soon: #b54708;
+  --doc-type: #7D007D;
+}
+.doc-badge { display: inline-block; padding: 1px 8px; margin-left: 6px; border-radius: 10px; font-size: 12px; border: 1px solid currentColor; }
+.doc-badge-expired { color: var(--doc-expired); }
+.doc-badge-soon { color: var(--doc-soon); }
+.doc-badge-type { color: var(--doc-type); margin-left: 0; }
 }

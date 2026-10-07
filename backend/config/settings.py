@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.foundation",
     "apps.masters",
+    "apps.documents",
 ]
 
 MIDDLEWARE = [
@@ -72,6 +73,12 @@ TIME_ZONE = "Asia/Kolkata"
 USE_TZ = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1_000_000
+
+
+# --- Documents (Phase 3) ---
+BEMS_STORAGE_ROOT = env("BEMS_STORAGE_ROOT", "")   # absolute path OUTSIDE the project folder
+BEMS_UPLOAD_MAX_MB = int(env("BEMS_UPLOAD_MAX_MB", "20"))
+BEMS_DOWNLOAD_LINK_TTL_SECONDS = int(env("BEMS_DOWNLOAD_LINK_TTL_SECONDS", "120"))
 
 REST_FRAMEWORK = {
     # DEV ONLY authentication; the future real auth replaces this one line + dev_auth.py.

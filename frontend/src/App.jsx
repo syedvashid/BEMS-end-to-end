@@ -18,6 +18,8 @@ import EquipmentModelsPage from './pages/EquipmentModelsPage.jsx'
 import FundingSourcesPage from './pages/FundingSourcesPage.jsx'
 import LocationsPage from './pages/LocationsPage.jsx'
 import VendorsPage from './pages/VendorsPage.jsx'
+// import VendorsPage from './pages/VendorsPage.jsx'
+import DocumentsPage from './pages/DocumentsPage.jsx'
 
 const guard = (code, element) => (
   <PermissionGate code={code} fallback={<AccessDeniedPage />}>{element}</PermissionGate>
@@ -43,6 +45,7 @@ export default function App() {
         <Route path="vendors" element={guard('vendor.view', <VendorsPage />)} />
         <Route path="funding-sources" element={guard('funding_source.view', <FundingSourcesPage />)} />
         <Route path="equipment-models" element={guard('equipment_model.view', <EquipmentModelsPage />)} />
+         <Route path="documents" element={guard('document.view', <DocumentsPage />)} />
       </Route>
     </Routes>
   )

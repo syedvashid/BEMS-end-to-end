@@ -3,11 +3,18 @@ import ConfirmDeleteModal from '../components/ConfirmDeleteModal'
 import EquipmentModelFormModal from '../components/EquipmentModelFormModal'
 import PermissionGate from '../components/PermissionGate'
 import RiskBadge from '../components/RiskBadge'
-import { Button, FormField, Pagination, Table, useToast } from '../components/ui'
+// import { Button, FormField, Pagination, Table, useToast } from '../components/ui'
 import { useFacility } from '../context/FacilityContext'
 import useFetch from '../hooks/useFetch'
 import { dash } from '../utils/formHelpers'
 import { PAGE_SIZE } from '../utils/format'
+
+// import ConfirmDeleteModal from '../components/ConfirmDeleteModal'
+import DocumentsPanel from '../components/DocumentsPanel'
+// import EquipmentModelFormModal from '../components/EquipmentModelFormModal'
+// import PermissionGate from '../components/PermissionGate'
+// import RiskBadge from '../components/RiskBadge'
+import { Button, FormField, Modal, Pagination, Table, useToast } from '../components/ui'
 
 export default function EquipmentModelsPage() {
   const { can } = useFacility()
@@ -20,7 +27,7 @@ export default function EquipmentModelsPage() {
   const list = useFetch('/equipment-models/', { page, page_size: PAGE_SIZE, ...applied })
   const cats = useFetch('/equipment-categories/', { page_size: 100 })
   const mfrs = useFetch('/vendors/', { is_manufacturer: true, page_size: 100 })
-
+  const [docsFor, setDocsFor] = useState(null)
   const catName = Object.fromEntries((cats.data?.results ?? []).map((c) => [c.public_id, c.name]))
   const mfrName = Object.fromEntries((mfrs.data?.results ?? []).map((v) => [v.public_id, v.name]))
   const catOptions = [{ value: '', label: 'All categories' }].concat(
@@ -40,6 +47,7 @@ export default function EquipmentModelsPage() {
       key: 'actions', header: '', className: 'actions',
       render: (r) => (
         <div className="row">
+            {can('document.view') && <Button size="sm" onClick={() => setDocsFor(r)}>Documents</Button>}
           {can('equipment_model.change') && <Button size="sm" onClick={() => setEditing(r)}>Edit</Button>}
           {can('equipment_model.delete') && <Button size="sm" variant="danger" onClick={() => setDeleting(r)}>Delete</Button>}
         </div>
@@ -70,9 +78,16 @@ export default function EquipmentModelsPage() {
           onSaved={(_, isNew) => { setEditing(null); toast.success(isNew ? 'Model created.' : 'Model updated.'); list.reload() }}
         />
       )}
+       {docsFor && (
+        <Modal title={`Documents: ${docsFor.model_name}`} onClose={() => setDocsFor(null)} wide
+          footer={<Button onClick={() => setDocsFor(null)}>Close</Button>}>
+          <DocumentsPanel entityType="equipment_model" entityId={docsFor.public_id}
+            viewPermission="equipment_model.view" attachPermission="equipment_model.change" />
+        </Modal>
+      )}
       {deleting && (
         <ConfirmDeleteModal
-          title="Delete equipment model" label={`${deleting.model_name} (${deleting.model_number})`}
+          title="Delete equipment model"label={`${deleting.model_name} (${deleting.model_number})`}
           path={`/equipment-models/${deleting.public_id}/`} rowVersion={deleting.row_version}
           onClose={() => setDeleting(null)} onStale={list.reload}
           onDone={() => { setDeleting(null); toast.success('Model deleted.'); list.reload() }}

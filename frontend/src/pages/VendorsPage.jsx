@@ -8,6 +8,8 @@ import { useFacility } from '../context/FacilityContext'
 import useFetch from '../hooks/useFetch'
 import { dash } from '../utils/formHelpers'
 import { PAGE_SIZE } from '../utils/format'
+import DocumentsPanel from '../components/DocumentsPanel'
+// import PermissionGate from '../components/PermissionGate'
 
 const TYPE_FILTERS = [
   { value: '', label: 'All types' },
@@ -64,7 +66,12 @@ export default function VendorsPage() {
       <Pagination page={page} pageSize={PAGE_SIZE} count={list.data?.count ?? 0} onPageChange={setPage} />
 
       {selected && <VendorContactsPanel key={selected.public_id} vendor={selected} />}
-
+      {selected && (
+        <DocumentsPanel
+          key={`docs-${selected.public_id}`} entityType="vendor" entityId={selected.public_id}
+          viewPermission="vendor.view" attachPermission="vendor.change"
+        />
+      )}
       {editing && (
         <VendorFormModal
           vendor={editing === 'new' ? null : editing}

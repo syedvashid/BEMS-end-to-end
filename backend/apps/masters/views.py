@@ -181,3 +181,7 @@ class EquipmentModelViewSet(FacilityScopedViewSet):
     filterset_class = EquipmentModelFilter
     ordering_fields = ["model_name", "model_number", "created_at"]
     ordering = ["model_name"]
+
+    def check_can_modify(self, instance, action):
+        if action == "SOFT_DELETE":
+            gates.ensure_equipment_model_deletable(instance)

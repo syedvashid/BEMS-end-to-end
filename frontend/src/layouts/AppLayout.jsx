@@ -4,6 +4,8 @@ import FacilitySwitcher from '../components/FacilitySwitcher'
 import { Button } from '../components/ui'
 import { useFacility } from '../context/FacilityContext'
 import { MENU } from '../menu'
+// import FacilitySwitcher from '../components/FacilitySwitcher'
+import ScanBox from '../components/ScanBox'
 
 export default function AppLayout() {
   const { status, error, facilityId, can, refresh } = useFacility()
@@ -26,6 +28,7 @@ export default function AppLayout() {
       <header className="topbar">
         <span className="brand">BEMS</span>
         <span className="spacer" />
+           <ScanBox />
         <DevUserSwitcher />
         <FacilitySwitcher />
       </header>

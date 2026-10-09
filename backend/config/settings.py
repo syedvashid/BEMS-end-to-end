@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     "apps.foundation",
     "apps.masters",
     "apps.documents",
+    "apps.equipment",
+     "apps.maintenance",
 ]
 
 MIDDLEWARE = [

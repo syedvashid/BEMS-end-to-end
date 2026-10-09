@@ -14,6 +14,12 @@ def ensure_category_deletable(instance):
     _block(EquipmentModel.objects.filter(
         facility_id=instance.facility_id, category_id=instance.pk, is_active=True).count(), "equipment models")
     # Phase 4: active equipment records
+    from apps.maintenance.models import ChecklistTemplate, SparePartCategory   # Phase 5 (lazy: avoids a cycle)
+    _block(ChecklistTemplate.objects.filter(
+        facility_id=instance.facility_id, category_id=instance.pk, is_active=True).count(), "checklist templates")
+    _block(SparePartCategory.objects.filter(
+        facility_id=instance.facility_id, category_id=instance.pk, spare_part__is_active=True).count(),
+        "spare parts listing this category as compatible")
 
 
 def ensure_location_deletable(instance):
@@ -38,3 +44,10 @@ def ensure_vendor_deletable(instance):
 
 def ensure_funding_source_deletable(instance):
     pass  # no dependents yet (Phase 4/9 will add them)
+
+
+
+def ensure_equipment_model_deletable(instance):
+    from apps.maintenance.models import ChecklistTemplate   # Phase 5
+    _block(ChecklistTemplate.objects.filter(
+        facility_id=instance.facility_id, equipment_model_id=instance.pk, is_active=True).count(), "checklist templates")

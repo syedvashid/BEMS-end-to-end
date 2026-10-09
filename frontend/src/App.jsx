@@ -21,6 +21,17 @@ import VendorsPage from './pages/VendorsPage.jsx'
 // import VendorsPage from './pages/VendorsPage.jsx'
 import DocumentsPage from './pages/DocumentsPage.jsx'
 
+import EquipmentPage from './pages/EquipmentPage.jsx'
+import EquipmentBulkPage from './pages/EquipmentBulkPage.jsx'
+import EquipmentImportPage from './pages/EquipmentImportPage.jsx'
+import EquipmentDetailPage from './pages/EquipmentDetailPage.jsx'
+import WorkOrdersPage from './pages/WorkOrdersPage.jsx'
+import WorkOrderDetailPage from './pages/WorkOrderDetailPage.jsx'
+import PmDuePage from './pages/PmDuePage.jsx'
+import MaintenancePlansPage from './pages/MaintenancePlansPage.jsx'
+import ChecklistTemplatesPage from './pages/ChecklistTemplatesPage.jsx'
+import SparePartsPage from './pages/SparePartsPage.jsx'
+
 const guard = (code, element) => (
   <PermissionGate code={code} fallback={<AccessDeniedPage />}>{element}</PermissionGate>
 )
@@ -46,6 +57,16 @@ export default function App() {
         <Route path="funding-sources" element={guard('funding_source.view', <FundingSourcesPage />)} />
         <Route path="equipment-models" element={guard('equipment_model.view', <EquipmentModelsPage />)} />
          <Route path="documents" element={guard('document.view', <DocumentsPage />)} />
+          <Route path="equipment" element={guard('equipment.view', <EquipmentPage />)} />
+        <Route path="equipment/bulk" element={guard('equipment.add', <EquipmentBulkPage />)} />
+        <Route path="equipment/import" element={guard('equipment.import', <EquipmentImportPage />)} />
+        <Route path="equipment/:publicId" element={guard('equipment.view', <EquipmentDetailPage />)} />
+        <Route path="work-orders" element={guard('work_order.view', <WorkOrdersPage />)} />
+        <Route path="work-orders/:publicId" element={guard('work_order.view', <WorkOrderDetailPage />)} />
+        <Route path="pm-due" element={guard('maintenance_plan.view', <PmDuePage />)} />
+        <Route path="maintenance-plans" element={guard('maintenance_plan.view', <MaintenancePlansPage />)} />
+        <Route path="checklist-templates" element={guard('checklist_template.view', <ChecklistTemplatesPage />)} />
+        <Route path="spare-parts" element={guard('spare_part.view', <SparePartsPage />)} />
       </Route>
     </Routes>
   )

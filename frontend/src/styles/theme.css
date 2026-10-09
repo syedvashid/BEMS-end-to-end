@@ -44,4 +44,41 @@
 .doc-badge-expired { color: var(--doc-expired); }
 .doc-badge-soon { color: var(--doc-soon); }
 .doc-badge-type { color: var(--doc-type); margin-left: 0; }
+
+
+
+:root { --eq-ok: #2e7d32; --eq-warn: #b26a00; --eq-bad: #c62828; --eq-neutral: #5f6368; }
+.eq-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; border: 1px solid currentColor; color: var(--eq-neutral); }
+.eq-badge-commissioned, .eq-badge-in_service { color: var(--eq-ok); }
+.eq-badge-installed, .eq-badge-under_maintenance { color: var(--eq-warn); }
+.eq-badge-rejected, .eq-badge-out_of_service, .eq-badge-condemned { color: var(--eq-bad); }
+.eq-tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid #ddd; margin: 12px 0; }
+.eq-tab { background: none; border: 0; padding: 8px 12px; cursor: pointer; border-bottom: 2px solid transparent; }
+.eq-tab.active { border-bottom-color: #7D007D; color: #7D007D; font-weight: 600; }
+.eq-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px 24px; }
+.eq-kv { display: flex; flex-direction: column; }
+.eq-scan { display: inline-flex; align-items: center; gap: 8px; margin-right: 12px; }
+/* ADD THIS BLOCK to the end of src/styles/theme.css (colours live only in theme.css). */
+:root {
+  --mt-primary: #7D007D;
+  --mt-on-pill: #ffffff;
+  --mt-surface: #ffffff;
+  --mt-surface-soft: #f6f3f6;
+  --mt-border: #ddd6dd;
+  --mt-danger: #c62828;
+  --mt-danger-bg: #fdecea;
+  --mt-open: #6b7280;
+  --mt-assigned: #2563eb;
+  --mt-progress: #7D007D;
+  --mt-waiting: #b45309;
+  --mt-completed: #15803d;
+  --mt-closed: #374151;
+  --mt-cancelled: #9ca3af;
+  --mt-p-low: #6b7280;
+  --mt-p-medium: #2563eb;
+  --mt-p-high: #d97706;
+  --mt-p-critical: #c62828;
+}
+
+
 }

@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-# import psycopg
+import psycopg
 import pytest
 from psycopg import sql
 from rest_framework.test import APIClient

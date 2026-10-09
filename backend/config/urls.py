@@ -10,6 +10,8 @@ urlpatterns = [
     path("api/v1/", include("apps.foundation.urls")),
     path("api/v1/", include("apps.masters.urls")),
     path("api/v1/", include("apps.documents.urls")),
+    path("api/v1/", include("apps.equipment.urls")),
+    path("api/v1/", include("apps.maintenance.urls")),
 ]
 
 if settings.DEBUG:  # API docs only in DEBUG

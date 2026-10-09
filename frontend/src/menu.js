@@ -13,4 +13,10 @@ export const MENU = [
   { to: '/funding-sources', label: 'Funding Sources', permission: 'funding_source.view' },
   { to: '/equipment-models', label: 'Equipment Models', permission: 'equipment_model.view' },
   { to: '/documents', label: 'Documents', permission: 'document.view' },
+  { to: '/equipment', label: 'Equipment', permission: 'equipment.view' },
+  { to: '/work-orders', label: 'Work Orders', permission: 'work_order.view' },
+  { to: '/pm-due', label: 'PM Due', permission: 'maintenance_plan.view' },
+  { to: '/maintenance-plans', label: 'Maintenance Plans', permission: 'maintenance_plan.view' },
+  { to: '/checklist-templates', label: 'Checklist Templates', permission: 'checklist_template.view' },
+  { to: '/spare-parts', label: 'Spare Parts', permission: 'spare_part.view' },
 ]

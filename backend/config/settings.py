@@ -38,9 +38,9 @@ INSTALLED_APPS = [
     "apps.masters",
     "apps.documents",
     "apps.equipment",
-     "apps.maintenance",
+    "apps.maintenance",
+    "apps.compliance",
 ]
-
 MIDDLEWARE = [
     "apps.core.middleware.RequestIdMiddleware",
     "django.middleware.security.SecurityMiddleware",

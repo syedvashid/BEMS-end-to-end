@@ -7,7 +7,7 @@ from apps.equipment.serializers import ScopedFieldsMixin, ref
 from apps.foundation.models import User
 from apps.foundation.serializers import BlankToNullMixin, PublicIdField
 from apps.masters.models import Department, EquipmentCategory, EquipmentModel, Vendor
-
+from apps.compliance.models import AmcContract, Warranty
 from . import services
 from .models import (
     ChecklistTemplate, ChecklistTemplateItem, EquipmentHold, MaintenancePlan, SparePart, SparePartCategory,
@@ -236,8 +236,33 @@ def hold_repr(h):
             "reason": h.reason, "started_at": h.started_at, "released_at": h.released_at,
             "release_reason": h.release_reason,
             "work_order": ({"public_id": str(h.work_order.public_id), "wo_number": h.work_order.wo_number}
-                           if h.work_order_id else None)}
+                           if h.work_order_id else None),
+            "calibration_record": ({"public_id": str(h.calibration_record.public_id),
+                                    "performed_date": h.calibration_record.performed_date,
+                                    "result": h.calibration_record.result}
+                                   if h.calibration_record_id else None)}
 
+def _coverage_block(o, ctx, today):
+    """Compliance data on a work order, each part only for users who may view it."""
+    out = {"warranty": None, "amc_contract": None, "coverage_suggestion": None, "source_calibration_record": None}
+    if ctx.has("warranty.view") and o.warranty_id:
+        w = o.warranty
+        out["warranty"] = {"public_id": str(w.public_id), "warranty_type": w.warranty_type,
+                           "reference_number": w.reference_number, "start_date": w.start_date, "end_date": w.end_date}
+    if ctx.has("amc.view") and o.amc_contract_id:
+        c = o.amc_contract
+        out["amc_contract"] = {"public_id": str(c.public_id), "contract_number": c.contract_number,
+                               "contract_type": c.contract_type, "start_date": c.start_date, "end_date": c.end_date}
+    if (ctx.has("warranty.view") or ctx.has("amc.view")) and o.work_order_type in ("BREAKDOWN", "CORRECTIVE") \
+            and o.status not in services.LOCKED_STATUSES:
+        from apps.compliance.services import suggest_coverage
+        out["coverage_suggestion"] = suggest_coverage(o.equipment, today)
+    if ctx.has("calibration.view") and o.source_calibration_record_id:
+        r = o.source_calibration_record
+        out["source_calibration_record"] = {
+            "public_id": str(r.public_id), "performed_date": r.performed_date, "result": r.result,
+            "certificate_number": r.certificate_number, "equipment_public_id": str(o.equipment.public_id)}
+    return out
 
 class WorkOrderListSerializer(serializers.BaseSerializer):
     def to_representation(self, o):
@@ -264,7 +289,8 @@ class WorkOrderDetailSerializer(serializers.BaseSerializer):
         parts_cost = -sum((x.quantity * (x.unit_cost or ZERO) for x in ledger), ZERO)
         labour, vendor = o.labour_cost or ZERO, o.vendor_cost or ZERO
         names = _usernames([o.closed_by])
-        hold_rows = EquipmentHold.objects.filter(work_order_id=o.pk).select_related("work_order").order_by("-started_at")
+        hold_rows = EquipmentHold.objects.filter(work_order_id=o.pk).select_related(
+            "work_order", "calibration_record").order_by("-started_at")
         standby = o.standby_equipment if o.standby_equipment_id else None
         return {
             "public_id": str(o.public_id), "wo_number": o.wo_number, "work_order_type": o.work_order_type,
@@ -284,6 +310,7 @@ class WorkOrderDetailSerializer(serializers.BaseSerializer):
             "closed_at": o.closed_at, "closed_by": names.get(o.closed_by), "signoff_name": o.signoff_name,
             "root_cause": o.root_cause, "action_taken": o.action_taken, "cancel_reason": o.cancel_reason,
             "coverage_source": o.coverage_source,
+            **_coverage_block(o, ctx, today),
             "service_provider_vendor": ref(o.service_provider_vendor, "name") if o.service_provider_vendor_id else None,
             "vendor_call_reference": o.vendor_call_reference, "vendor_engineer_name": o.vendor_engineer_name,
             "vendor_visit_at": o.vendor_visit_at,
@@ -309,6 +336,9 @@ class WorkOrderUpdateSerializer(ScopedFieldsMixin, BlankToNullMixin, serializers
     labour_cost = serializers.DecimalField(max_digits=14, decimal_places=2, min_value=0, required=False, allow_null=True)
     vendor_cost = serializers.DecimalField(max_digits=14, decimal_places=2, min_value=0, required=False, allow_null=True)
     coverage_source = serializers.ChoiceField(choices=COVERAGE, required=False, allow_null=True)
+    warranty_id = PublicIdField(source="warranty", queryset=Warranty.objects.none(), required=False, allow_null=True)
+    amc_contract_id = PublicIdField(source="amc_contract", queryset=AmcContract.objects.none(),
+                                    required=False, allow_null=True)
     service_provider_vendor = PublicIdField(queryset=Vendor.objects.none(), required=False, allow_null=True)
     vendor_call_reference = serializers.CharField(max_length=200, required=False, allow_null=True)
     vendor_engineer_name = serializers.CharField(max_length=200, required=False, allow_null=True)
@@ -317,11 +347,13 @@ class WorkOrderUpdateSerializer(ScopedFieldsMixin, BlankToNullMixin, serializers
     signoff_name = serializers.CharField(max_length=200, required=False, allow_null=True)
     downtime_start = serializers.DateTimeField(required=False, allow_null=True)
     downtime_end = serializers.DateTimeField(required=False, allow_null=True)
-    SCOPED = {"service_provider_vendor": Vendor, "standby_equipment": Equipment}
+    SCOPED = {"service_provider_vendor": Vendor, "standby_equipment": Equipment,
+              "warranty_id": Warranty, "amc_contract_id": AmcContract}
 
     class Meta:
         model = WorkOrder
         fields = ["priority", "root_cause", "action_taken", "labour_cost", "vendor_cost", "coverage_source",
+                  "warranty_id", "amc_contract_id",
                   "service_provider_vendor", "vendor_call_reference", "vendor_engineer_name", "vendor_visit_at",
                   "standby_equipment", "signoff_name", "downtime_start", "downtime_end"]
 
@@ -333,6 +365,24 @@ class WorkOrderUpdateSerializer(ScopedFieldsMixin, BlankToNullMixin, serializers
                 raise serializers.ValidationError({"standby_equipment": ["Standby must be a different equipment."]})
             if se.lifecycle_stage != "COMMISSIONED":
                 raise serializers.ValidationError({"standby_equipment": ["Standby equipment must be commissioned."]})
+        # coverage links: changing the source clears a link that no longer fits; a new link sets the source
+        src_in = "coverage_source" in a
+        src = a["coverage_source"] if src_in else inst.coverage_source
+        if src_in and src != "WARRANTY" and "warranty" not in a:
+            a["warranty"] = None
+        if src_in and src != "AMC" and "amc_contract" not in a:
+            a["amc_contract"] = None
+        if a.get("warranty") is not None and "amc_contract" not in a:
+            a["amc_contract"] = None
+        if a.get("amc_contract") is not None and "warranty" not in a:
+            a["warranty"] = None
+        new_w, new_c = a.get("warranty"), a.get("amc_contract")
+        if new_w is not None or new_c is not None:
+            from apps.compliance.services import resolve_coverage_links
+            src, _, _ = resolve_coverage_links(
+                facility=_fac(self), equipment=inst.equipment, coverage_source=a.get("coverage_source") if src_in else None,
+                warranty=new_w, amc_contract=new_c)
+            a["coverage_source"] = src
         start = a["downtime_start"] if "downtime_start" in a else inst.downtime_start
         end = a["downtime_end"] if "downtime_end" in a else inst.downtime_end
         if start and end and end < start:
@@ -347,6 +397,7 @@ class WorkOrderCreateSerializer(ScopedFieldsMixin, BlankToNullMixin, serializers
     work_order_type = serializers.ChoiceField(choices=["CORRECTIVE", "PREVENTIVE"])
     equipment = PublicIdField(queryset=Equipment.objects.none())
     priority = serializers.ChoiceField(choices=PRIORITIES, required=False, default="MEDIUM")
+    coverage_source = serializers.ChoiceField(choices=COVERAGE, required=False, allow_null=True)
     due_date = serializers.DateField(required=False, allow_null=True)
     problem_description = serializers.CharField(max_length=4000, required=False, allow_null=True)
     parent_work_order = PublicIdField(queryset=WorkOrder.objects.none(), required=False, allow_null=True)
@@ -354,17 +405,16 @@ class WorkOrderCreateSerializer(ScopedFieldsMixin, BlankToNullMixin, serializers
     assigned_to = UserField(required=False, allow_null=True)
     SCOPED = {"equipment": Equipment, "parent_work_order": WorkOrder, "checklist_template": ChecklistTemplate}
 
-
 class BreakdownSerializer(ScopedFieldsMixin, BlankToNullMixin, serializers.Serializer):
     equipment = PublicIdField(queryset=Equipment.objects.none())
     problem_description = serializers.CharField(max_length=4000)
     priority = serializers.ChoiceField(choices=PRIORITIES, required=False, default="MEDIUM")
+    coverage_source = serializers.ChoiceField(choices=COVERAGE, required=False, allow_null=True)
     reported_by_name = serializers.CharField(max_length=200, required=False, allow_null=True)
     reported_by_department = PublicIdField(queryset=Department.objects.none(), required=False, allow_null=True)
     reported_at = serializers.DateTimeField(required=False, allow_null=True)
     equipment_unusable = serializers.BooleanField(required=False, default=False)
     SCOPED = {"equipment": Equipment, "reported_by_department": Department}
-
 
 class EmptySerializer(serializers.Serializer):
     pass

@@ -71,6 +71,24 @@ class ScopedFieldsMixin:
 
 # ---------------------------------------------------------------- read shapes
 class EquipmentListSerializer(serializers.BaseSerializer):
+    def _compliance(self, o):
+        empty = {"calibration_status": None, "next_calibration_due": None, "has_unresolved_failure": None,
+                 "current_warranty": None, "current_amc": None}
+        ctx = getattr(self.context.get("request"), "bems", None)
+        if ctx is None:
+            return empty
+        from apps.compliance.services import equipment_compliance_summary
+        from apps.maintenance.services import today_for
+        full = equipment_compliance_summary(o, today_for(ctx.facility))
+        out = dict(empty)
+        if ctx.has("calibration.view"):
+            for k in ("calibration_status", "next_calibration_due", "has_unresolved_failure"):
+                out[k] = full[k]
+        if ctx.has("warranty.view"):
+            out["current_warranty"] = full["current_warranty"]
+        if ctx.has("amc.view"):
+            out["current_amc"] = full["current_amc"]
+        return out
     def to_representation(self, o):
         m = o.equipment_model
         return {
@@ -155,6 +173,7 @@ class EquipmentDetailSerializer(serializers.BaseSerializer):
                                                         c.default_calibration_interval_days),
             "effective_risk_class": m.risk_class or c.risk_class,
             "effective_expected_life_years": pick(o.expected_life_years, m.expected_life_years),
+            **self._compliance(o),
             "is_active": o.is_active, "row_version": o.row_version,
             "created_at": o.created_at, "updated_at": o.updated_at,
         }

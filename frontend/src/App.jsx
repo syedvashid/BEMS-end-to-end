@@ -31,12 +31,18 @@ import PmDuePage from './pages/PmDuePage.jsx'
 import MaintenancePlansPage from './pages/MaintenancePlansPage.jsx'
 import ChecklistTemplatesPage from './pages/ChecklistTemplatesPage.jsx'
 import SparePartsPage from './pages/SparePartsPage.jsx'
-
+import CalibrationPage from './pages/CalibrationPage.jsx'
+import WarrantiesPage from './pages/WarrantiesPage.jsx'
+import AmcContractsPage from './pages/AmcContractsPage.jsx'
+import LicencesPage from './pages/LicencesPage.jsx'
+import CompliancePage from './pages/CompliancePage.jsx'
+console.log('App module loaded')
 const guard = (code, element) => (
   <PermissionGate code={code} fallback={<AccessDeniedPage />}>{element}</PermissionGate>
 )
 
 export default function App() {
+  console.log('App module loaded')
   return (
     <Routes>
       <Route element={<AppLayout />}>
@@ -67,6 +73,11 @@ export default function App() {
         <Route path="maintenance-plans" element={guard('maintenance_plan.view', <MaintenancePlansPage />)} />
         <Route path="checklist-templates" element={guard('checklist_template.view', <ChecklistTemplatesPage />)} />
         <Route path="spare-parts" element={guard('spare_part.view', <SparePartsPage />)} />
+        <Route path="calibration" element={guard('calibration.view', <CalibrationPage />)} />
+        <Route path="warranties" element={guard('warranty.view', <WarrantiesPage />)} />
+        <Route path="amc-contracts" element={guard('amc.view', <AmcContractsPage />)} />
+        <Route path="licences" element={guard('licence.view', <LicencesPage />)} />
+        <Route path="compliance" element={guard('calibration.view', <CompliancePage />)} />
       </Route>
     </Routes>
   )

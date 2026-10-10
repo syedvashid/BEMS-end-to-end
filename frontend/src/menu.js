@@ -19,4 +19,9 @@ export const MENU = [
   { to: '/maintenance-plans', label: 'Maintenance Plans', permission: 'maintenance_plan.view' },
   { to: '/checklist-templates', label: 'Checklist Templates', permission: 'checklist_template.view' },
   { to: '/spare-parts', label: 'Spare Parts', permission: 'spare_part.view' },
+  { to: '/calibration', label: 'Calibration', permission: 'calibration.view' },
+  { to: '/warranties', label: 'Warranties', permission: 'warranty.view' },
+  { to: '/amc-contracts', label: 'AMC Contracts', permission: 'amc.view' },
+  { to: '/licences', label: 'Licences', permission: 'licence.view' },
+  { to: '/compliance', label: 'Due & Expiry', permission: 'calibration.view' },
 ]

@@ -29,7 +29,10 @@ def all_attachables():
 
 def resolve_target(att, public_id, facility):
     """Target must exist, be active and belong to the current facility, else 404."""
-    obj = att.model.objects.filter(public_id=public_id, facility_id=facility.id, is_active=True).first()
+    qs = att.model.objects.filter(public_id=public_id, facility_id=facility.id)
+    if any(f.name == "is_active" for f in att.model._meta.concrete_fields):
+        qs = qs.filter(is_active=True)
+    obj = qs.first()
     if obj is None:
         raise NotFound()
     return obj

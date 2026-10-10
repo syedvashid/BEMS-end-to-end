@@ -150,6 +150,17 @@ def _snapshot_checklist(wo, template, uid):
             item_type=i.item_type, unit=i.unit, min_value=i.min_value, max_value=i.max_value,
             created_by=uid, updated_by=uid) for i in items])
 
+def _coverage_fields(facility, eq, coverage_source, at=None):
+    """When coverage_source is not supplied, fill it (and the link) from the warranty/AMC suggestion."""
+    if coverage_source is not None:
+        return {"coverage_source": coverage_source}
+    from apps.compliance.services import find_coverage
+    source, obj = find_coverage(eq, today_for(facility, at))
+    if source == "WARRANTY":
+        return {"coverage_source": "WARRANTY", "warranty": obj}
+    if source == "AMC":
+        return {"coverage_source": "AMC", "amc_contract": obj}
+    return {}
 
 def _create_wo(request, facility, *, equipment, work_order_type, priority, status="OPEN", plan=None,
                template=None, assigned_to=None, **fields):
@@ -201,7 +212,7 @@ def create_pm_work_order(*, request, plan, due_date):
 
 
 def report_breakdown(*, request, facility, equipment, problem_description, priority="MEDIUM", reported_by_name=None,
-                     reported_by_department=None, reported_at=None, equipment_unusable=False):
+                     reported_by_department=None, reported_at=None, equipment_unusable=False, coverage_source=None):
     now = timezone.now()
     reported_at = reported_at or now
     if reported_at > now:
@@ -217,7 +228,8 @@ def report_breakdown(*, request, facility, equipment, problem_description, prior
             request, facility, equipment=eq, work_order_type="BREAKDOWN", priority=priority,
             problem_description=problem_description.strip(), reported_at=reported_at,
             reported_by_name=reported_by_name, reported_by_department=reported_by_department,
-            equipment_unusable=equipment_unusable, downtime_start=reported_at)
+            equipment_unusable=equipment_unusable, downtime_start=reported_at,
+            **_coverage_fields(facility, eq, coverage_source, reported_at))
         if equipment_unusable:
             holds.place_hold(request=request, equipment=eq, hold_type="OUT_OF_SERVICE", source_type="WORK_ORDER",
                              work_order=wo, reason=f"Breakdown {wo.wo_number}: equipment cannot be used")
@@ -225,7 +237,8 @@ def report_breakdown(*, request, facility, equipment, problem_description, prior
 
 
 def create_work_order(*, request, facility, work_order_type, equipment, priority="MEDIUM", due_date=None,
-                      problem_description=None, parent_work_order=None, checklist_template=None, assigned_to=None):
+                      problem_description=None, parent_work_order=None, checklist_template=None, assigned_to=None,
+                      coverage_source=None, source_calibration_record=None):
     """CORRECTIVE or manual PREVENTIVE."""
     if work_order_type not in ("CORRECTIVE", "PREVENTIVE"):
         raise ValidationError({"work_order_type": ["Use the breakdown report for breakdowns."]})
@@ -241,10 +254,15 @@ def create_work_order(*, request, facility, work_order_type, equipment, priority
             "User must be an active member of this facility with permission to execute work orders."]})
     with transaction.atomic():
         eq = _get_equipment(facility.id, equipment.pk)
+        extra = _coverage_fields(facility, eq, coverage_source) if work_order_type == "CORRECTIVE" \
+            else ({"coverage_source": coverage_source} if coverage_source else {})
+        if source_calibration_record is not None:
+            extra["source_calibration_record"] = source_calibration_record
         return _create_wo(
             request, facility, equipment=eq, work_order_type=work_order_type, priority=priority,
             template=checklist_template, assigned_to=assigned_to, due_date=due_date,
-            problem_description=(problem_description or "").strip() or None, parent_work_order=parent_work_order)
+            problem_description=(problem_description or "").strip() or None, parent_work_order=parent_work_order,
+            **extra)
 
 
 # ------------------------------------------------------------------ status services

@@ -33,8 +33,11 @@ def ensure_department_deletable(instance):
         facility_id=instance.facility_id, department_id=instance.pk, is_active=True).count(), "locations")
     # Phase 4: active equipment owned by this department
 
-
+from apps.compliance.gates import vendor_compliance_blockers
 def ensure_vendor_deletable(instance):
+    blockers = vendor_compliance_blockers(instance)
+    if blockers:
+        raise Conflict("Cannot delete: " + "; ".join(blockers) + " still use this vendor.")
     _block(VendorContact.objects.filter(
         facility_id=instance.facility_id, vendor_id=instance.pk, is_active=True).count(), "contacts")
     _block(EquipmentModel.objects.filter(

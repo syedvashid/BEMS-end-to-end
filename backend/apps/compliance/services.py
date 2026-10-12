@@ -656,3 +656,33 @@ def compliance_due(*, facility, can, types=None, within_days=90, bucket=None, eq
         rows += _due_documents(fid, today, lo_exp, hi, equipment_pk, department_pk, can)
     rows.sort(key=lambda r: (r["due_date"], r["item_type"], r["source_public_id"]))
     return rows
+
+
+
+
+def bulk_calibration_status(equipment_ids, today=None):
+    """Set-based twin of calibration_status() for lists: a fixed number of queries whatever the list size.
+    Returns {equipment_id: {status, next_due_date, has_unresolved_failure, schedule_public_id}}."""
+    from apps.equipment.models import Equipment            # lazy: avoids a circular import
+    ids = list(dict.fromkeys(equipment_ids))
+    if not ids:
+        return {}
+    fac_of = dict(Equipment.objects.filter(pk__in=ids).values_list("pk", "facility_id"))
+    facilities = {f.pk: f for f in Facility.objects.filter(pk__in=set(fac_of.values()))}
+    today_of = {fid: (today or today_for(f)) for fid, f in facilities.items()}
+    schedules = {s.equipment_id: s for s in CalibrationSchedule.objects.filter(
+        equipment_id__in=ids, is_active=True)}
+    last = {r["equipment_id"]: r["result"] for r in CalibrationRecord.objects.filter(
+        equipment_id__in=ids).order_by("equipment_id", "-performed_date", "-id").distinct("equipment_id").values(
+        "equipment_id", "result")}
+    out = {}
+    for eid in ids:
+        s = schedules.get(eid)
+        t = today_of.get(fac_of.get(eid))
+        out[eid] = {
+            "status": "NOT_REQUIRED" if s is None else status_code(s.next_due_date, s.lead_days, t),
+            "next_due_date": s.next_due_date if s else None,
+            "has_unresolved_failure": last.get(eid) == "FAIL",
+            "schedule_public_id": str(s.public_id) if s else None,
+        }
+    return out

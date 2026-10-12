@@ -1,0 +1,18 @@
+.al-items { margin: 4px 0; padding-left: 18px; }
+.al-check { display: inline-flex; align-items: center; gap: 6px; margin: 6px 0; }
+.al-timeline { overflow-x: auto; border: 1px solid var(--border, #ddd); }
+.al-row { display: flex; min-width: 900px; border-bottom: 1px solid var(--border, #ddd); }
+.al-label { flex: 0 0 160px; padding: 4px 8px; font-size: 12px; overflow: hidden; }
+.al-track {
+  position: relative; flex: 1; min-height: 44px;
+  background-image: repeating-linear-gradient(to right, transparent 0, transparent calc(100% / 24 - 1px), var(--border, #ddd) calc(100% / 24 - 1px), var(--border, #ddd) calc(100% / 24));
+  cursor: pointer;
+}
+.al-hours { display: flex; min-height: 24px; background-image: none; cursor: default; }
+.al-hours span { flex: 1; font-size: 11px; text-align: left; padding-left: 2px; }
+.al-bar {
+  position: absolute; top: 6px; bottom: 6px; min-width: 6px; border: 0; border-radius: 4px; padding: 0 4px;
+  color: #fff; font-size: 11px; overflow: hidden; white-space: nowrap; cursor: pointer; background: var(--primary);
+}
+.al-fulfilled { background: var(--success, #2e7d32); }
+.al-no_show { background: var(--danger, #c62828); }

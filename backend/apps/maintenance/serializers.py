@@ -132,9 +132,10 @@ class MaintenancePlanSerializer(ScopedFieldsMixin, BlankToNullMixin, serializers
     name = serializers.CharField(max_length=200)
     equipment = PublicIdField(queryset=Equipment.objects.none())
     checklist_template = PublicIdField(queryset=ChecklistTemplate.objects.none(), required=False, allow_null=True)
-    frequency_type = serializers.ChoiceField(choices=["DAYS", "MONTHS"])
-    frequency_value = serializers.IntegerField(min_value=1, max_value=3650)
+    frequency_type = serializers.ChoiceField(choices=["DAYS", "MONTHS", "USAGE_HOURS"])
+    frequency_value = serializers.IntegerField(min_value=1, max_value=100000)   # DAYS/MONTHS are capped at 3650 in validate()
     lead_days = serializers.IntegerField(min_value=0, max_value=365, required=False)
+    lead_usage_hours = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=0, required=False)
     priority = serializers.ChoiceField(choices=PRIORITIES, required=False)
     default_assignee = UserField(source="default_assignee_user", required=False, allow_null=True)
     notes = serializers.CharField(max_length=2000, required=False, allow_null=True)
@@ -143,9 +144,11 @@ class MaintenancePlanSerializer(ScopedFieldsMixin, BlankToNullMixin, serializers
     class Meta:
         model = MaintenancePlan
         fields = ["public_id", "name", "equipment", "checklist_template", "frequency_type", "frequency_value",
-                  "lead_days", "priority", "default_assignee", "start_date", "last_performed_date",
+                  "lead_days", "lead_usage_hours", "priority", "default_assignee", "start_date",
+                  "last_performed_date", "last_performed_usage_hours",
                   "next_due_date", "notes", "is_active", "row_version", "created_at", "updated_at"]
-        read_only_fields = ["public_id", "is_active", "row_version", "created_at", "updated_at"]
+        read_only_fields = ["public_id", "last_performed_usage_hours", "is_active", "row_version",
+                            "created_at", "updated_at"]
         extra_kwargs = {"start_date": {"required": False}, "next_due_date": {"required": False}}
 
     def validate(self, a):
@@ -166,13 +169,29 @@ class MaintenancePlanSerializer(ScopedFieldsMixin, BlankToNullMixin, serializers
                 raise serializers.ValidationError({"name": ["This equipment already has an active plan with this name."]})
         if "name" in a:
             a["name"] = name
-        if inst is None:   # create: derive the dates
+        ftype = a.get("frequency_type") or (inst.frequency_type if inst else None)
+        fval = a.get("frequency_value") or (inst.frequency_value if inst else None)
+        if ftype != "USAGE_HOURS" and fval and fval > 3650:
+            raise serializers.ValidationError({"frequency_value": ["Ensure this value is less than or equal to 3650."]})
+        if ftype == "USAGE_HOURS":
+            if a.get("next_due_date") is not None:
+                raise serializers.ValidationError({"next_due_date": ["Not used for usage-hour plans."]})
+            a["next_due_date"] = None
+            if inst is None:
+                a["start_date"] = a.get("start_date") or (services.today_for(fac) if fac else None)
+            if inst is None or inst.last_performed_usage_hours is None:   # baseline = usage total now
+                from apps.allocation.services import usage_hours_total
+                a["last_performed_usage_hours"] = usage_hours_total(eq)
+        elif inst is None:   # create: derive the dates
             start = a.get("start_date") or (services.today_for(fac) if fac else None)
             a["start_date"] = start
             if "next_due_date" not in a or a["next_due_date"] is None:
                 last = a.get("last_performed_date")
-                a["next_due_date"] = services.add_interval(last, a["frequency_type"], a["frequency_value"]) \
-                    if last else start
+                a["next_due_date"] = services.add_interval(last, ftype, fval) if last else start
+        elif a.get("next_due_date") is None and ("next_due_date" in a or inst.next_due_date is None):
+            base = inst.last_performed_date      # switching a usage plan back to a dated plan
+            a["next_due_date"] = services.add_interval(base, ftype, fval) if base else (
+                services.today_for(fac) if fac else None)
         return a
 
     def to_representation(self, o):

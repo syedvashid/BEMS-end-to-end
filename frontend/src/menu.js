@@ -24,4 +24,10 @@ export const MENU = [
   { to: '/amc-contracts', label: 'AMC Contracts', permission: 'amc.view' },
   { to: '/licences', label: 'Licences', permission: 'licence.view' },
   { to: '/compliance', label: 'Due & Expiry', permission: 'calibration.view' },
+  { to: '/availability', label: 'Availability', permission: 'allocation.view' },
+  { to: '/allocations', label: 'Allocations', permission: 'allocation.view' },
+  { to: '/bedside', label: 'Bedside View', permission: 'allocation.view' },
+  { to: '/reservations', label: 'Reservations', permission: 'reservation.view' },
+  { to: '/transfers', label: 'Transfers', permission: 'transfer.view' },
+  { to: '/usage-logs', label: 'Usage Logs', permission: 'usage.view' },
 ]

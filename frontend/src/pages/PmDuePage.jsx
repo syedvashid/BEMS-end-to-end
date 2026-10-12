@@ -33,7 +33,11 @@ export default function PmDuePage() {
           { key: 'equipment', header: 'Equipment', render: (p) => <Link to={`/equipment/${p.equipment.public_id}`}>{p.equipment.asset_tag} · {p.equipment.name}</Link> },
           { key: 'name', header: 'Plan' },
           { key: 'priority', header: 'Priority', render: (p) => <PriorityPill priority={p.priority} /> },
-          { key: 'next_due_date', header: 'Due', render: (p) => (p.is_overdue ? <strong className="mt-low mt-pill">{p.next_due_date} · {p.days_overdue} d overdue</strong> : `${p.next_due_date} · in ${p.days_left} d`) },
+           { key: 'next_due_date', header: 'Due', render: (p) => (p.frequency_type === 'USAGE_HOURS'
+            ? (p.is_overdue
+              ? <strong className="mt-low mt-pill">{Number(p.hours_since_last).toFixed(1)} h since last · {(-Number(p.hours_remaining)).toFixed(1)} h over</strong>
+              : `${Number(p.hours_since_last).toFixed(1)} h since last · ${Number(p.hours_remaining).toFixed(1)} h left`)
+            : (p.is_overdue ? <strong className="mt-low mt-pill">{p.next_due_date} · {p.days_overdue} d overdue</strong> : `${p.next_due_date} · in ${p.days_left} d`)) },
           { key: 'wo', header: 'Work order', render: (p) => (p.open_work_order
             ? <><Link to={`/work-orders/${p.open_work_order.public_id}`}>{p.open_work_order.wo_number}</Link> <StatusPill status={p.open_work_order.status} /></>
             : (can('work_order.change') ? <Button size="sm" onClick={() => generate(p)}>Generate now</Button> : '—')) },

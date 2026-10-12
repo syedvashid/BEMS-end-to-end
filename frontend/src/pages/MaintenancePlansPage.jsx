@@ -10,6 +10,7 @@ import { PRIORITIES, PRIORITY_LABEL, apiError, errorText, fe, opts, toNull } fro
 import '../styles/maintenance.css'
 
 const FREQ = { DAYS: 'Days', MONTHS: 'Months' }
+const PLAN_FREQ = { ...FREQ, USAGE_HOURS: 'Usage hours' }
 
 function PlanForm({ plan, onClose, onSaved }) {
   const { can } = useFacility()
@@ -17,20 +18,27 @@ function PlanForm({ plan, onClose, onSaved }) {
   const people = useFetch('/work-orders/assignees/', {}, can('work_order.assign'))
   const [equipment, setEquipment] = useState(plan ? { public_id: plan.equipment.public_id, label: `${plan.equipment.asset_tag} · ${plan.equipment.name}` } : null)
   const [f, setF] = useState({
-    name: plan?.name || '', frequency_type: plan?.frequency_type || 'DAYS', frequency_value: plan?.frequency_value ?? '',
+      name: plan?.name || '', frequency_type: plan?.frequency_type || 'DAYS', frequency_value: plan?.frequency_value ?? '',
+    lead_usage_hours: plan?.lead_usage_hours ?? 0,
     lead_days: plan?.lead_days ?? 7, priority: plan?.priority || 'MEDIUM', checklist_template: plan?.checklist_template?.public_id || '',
     default_assignee: plan?.default_assignee?.public_id || '', start_date: plan?.start_date || '',
     last_performed_date: plan?.last_performed_date || '', next_due_date: plan?.next_due_date || '', notes: plan?.notes || '',
   })
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
-  const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
+    const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
+  const usage = f.frequency_type === 'USAGE_HOURS'
   const save = async () => {
     setBusy(true); setErr(null)
     const body = {
       name: f.name, equipment: equipment?.public_id ?? null, frequency_type: f.frequency_type, frequency_value: toNull(f.frequency_value),
       lead_days: toNull(f.lead_days), priority: f.priority, checklist_template: toNull(f.checklist_template),
       start_date: toNull(f.start_date), last_performed_date: toNull(f.last_performed_date), next_due_date: toNull(f.next_due_date), notes: toNull(f.notes),
+    }
+    if (usage) {
+      delete body.last_performed_date
+      body.next_due_date = null
+      body.lead_usage_hours = toNull(f.lead_usage_hours)
     }
     if (can('work_order.assign')) body.default_assignee = toNull(f.default_assignee)
     try {
@@ -48,9 +56,10 @@ function PlanForm({ plan, onClose, onSaved }) {
       {plan ? <p><strong>{equipment.label}</strong></p> : <EquipmentPicker value={equipment} onChange={setEquipment} required error={fe(err, 'equipment')} />}
       <FormField label="Plan name" name="name" required value={f.name} onChange={set('name')} error={fe(err, 'name')} />
       <div className="mt-row">
-        <FormField label="Every" name="frequency_value" type="number" required value={f.frequency_value} onChange={set('frequency_value')} error={fe(err, 'frequency_value')} />
-        <FormField label="Unit" name="frequency_type" as="select" options={opts(Object.keys(FREQ), FREQ)} value={f.frequency_type} onChange={set('frequency_type')} error={fe(err, 'frequency_type')} />
-        <FormField label="Create work order days ahead" name="lead_days" type="number" value={f.lead_days} onChange={set('lead_days')} error={fe(err, 'lead_days')} />
+       <FormField label={usage ? 'Every (hours of use)' : 'Every'} name="frequency_value" type="number" required value={f.frequency_value} onChange={set('frequency_value')} error={fe(err, 'frequency_value')} />
+        <FormField label="Unit" name="frequency_type" as="select" options={opts(Object.keys(PLAN_FREQ), PLAN_FREQ)} value={f.frequency_type} onChange={set('frequency_type')} error={fe(err, 'frequency_type')} />
+          {!usage && <FormField label="Last performed" name="last_performed_date" type="date" value={f.last_performed_date} onChange={set('last_performed_date')} error={fe(err, 'last_performed_date')} />}
+        {!usage && <FormField label="Next due" name="next_due_date" type="date" hint="Leave empty to calculate" value={f.next_due_date} onChange={set('next_due_date')} error={fe(err, 'next_due_date')} />}
         <FormField label="Priority" name="priority" as="select" options={opts(PRIORITIES, PRIORITY_LABEL)} value={f.priority} onChange={set('priority')} error={fe(err, 'priority')} />
       </div>
       <div className="mt-row">
@@ -147,8 +156,8 @@ export default function MaintenancePlansPage() {
         columns={[
           { key: 'equipment', header: 'Equipment', render: (p) => <Link to={`/equipment/${p.equipment.public_id}`}>{p.equipment.asset_tag} · {p.equipment.name}</Link> },
           { key: 'name', header: 'Plan' },
-          { key: 'freq', header: 'Every', render: (p) => `${p.frequency_value} ${FREQ[p.frequency_type].toLowerCase()}` },
-          { key: 'next_due_date', header: 'Next due' },
+          { key: 'freq', header: 'Every', render: (p) => `${p.frequency_value} ${PLAN_FREQ[p.frequency_type].toLowerCase()}` },
+          { key: 'next_due_date', header: 'Next due', render: (p) => p.next_due_date || 'By usage' },
           { key: 'last', header: 'Last done', render: (p) => p.last_performed_date || '—' },
           { key: 'template', header: 'Checklist', render: (p) => p.checklist_template?.name || '—' },
           { key: 'assignee', header: 'Default assignee', render: (p) => p.default_assignee?.full_name || '—' },

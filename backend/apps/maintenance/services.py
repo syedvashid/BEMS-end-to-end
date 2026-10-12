@@ -356,6 +356,20 @@ def _advance_plan(request, wo, facility, completed_at):
     if plan is None:
         return
     done = today_for(facility, completed_at)
+    if plan.frequency_type == "USAGE_HOURS":     # Phase 7: baseline = usage total at completion; no due date
+        from apps.allocation.services import usage_hours_total
+        before = {"last_performed_date": plan.last_performed_date,
+                  "last_performed_usage_hours": plan.last_performed_usage_hours}
+        plan.last_performed_date = done
+        plan.last_performed_usage_hours = usage_hours_total(Equipment.objects.get(pk=plan.equipment_id))
+        plan.updated_by = request.user.id
+        plan.save(update_fields=["last_performed_date", "last_performed_usage_hours", "updated_by"])
+        after = {"last_performed_date": plan.last_performed_date,
+                 "last_performed_usage_hours": plan.last_performed_usage_hours}
+        audit.record(request=request, action="UPDATE", facility_id=wo.facility_id, entity_type="MaintenancePlan",
+                     entity_public_id=plan.public_id, previous=before, new=after,
+                     changed_fields=audit.diff(before, after))
+        return
     before = {"last_performed_date": plan.last_performed_date, "next_due_date": plan.next_due_date}
     plan.last_performed_date = done
     plan.next_due_date = add_interval(done, plan.frequency_type, plan.frequency_value)
@@ -420,12 +434,15 @@ def cancel(*, request, wo, reason, next_due_date=None, expected_version=None):
         facility = Facility.objects.get(pk=wo.facility_id)
         plan = None
         if wo.work_order_type == "PREVENTIVE" and wo.maintenance_plan_id:
-            if next_due_date is None:
-                raise ValidationError({"next_due_date": ["Required when cancelling a preventive work order."]})
-            if next_due_date < today_for(facility):
-                raise ValidationError({"next_due_date": ["Cannot be in the past."]})
             plan = MaintenancePlan.objects.select_for_update().filter(
                 pk=wo.maintenance_plan_id, facility_id=wo.facility_id).first()
+            if plan is not None and plan.frequency_type == "USAGE_HOURS":
+                plan = None       # usage plans have no due date; the scheduler recreates the order
+            else:
+                if next_due_date is None:
+                    raise ValidationError({"next_due_date": ["Required when cancelling a preventive work order."]})
+                if next_due_date < today_for(facility):
+                    raise ValidationError({"next_due_date": ["Cannot be in the past."]})
         _move_status(request, wo, "CANCELLED", "CANCELLED", reason.strip(), cancel_reason=reason.strip())
         holds.release_work_order_holds(request=request, wo=wo, reason=f"Work order {wo.wo_number} cancelled")
         if plan is not None and plan.is_active:

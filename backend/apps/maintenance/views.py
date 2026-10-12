@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django.db import transaction
-from django.db.models import Count, DecimalField, Exists, OuterRef, Subquery, Sum
+from django.db.models import Count, DecimalField, Exists, OuterRef, Subquery, Sum, Q
 from django.db.models.functions import Coalesce
 from rest_framework.decorators import action
 from rest_framework.exceptions import MethodNotAllowed, NotFound, ValidationError
@@ -69,6 +69,8 @@ class ChecklistTemplateViewSet(FacilityScopedViewSet):
                 raise Conflict(f"Cannot delete: {n} active maintenance plans still use this template.")
 
 
+
+
 # ================================================================== maintenance plans
 class MaintenancePlanViewSet(FacilityScopedViewSet):
     queryset = MaintenancePlan.objects.select_related("equipment", "checklist_template", "default_assignee_user")
@@ -103,22 +105,36 @@ class MaintenancePlanViewSet(FacilityScopedViewSet):
         open_wo = WorkOrder.objects.filter(maintenance_plan_id=OuterRef("pk")).exclude(
             status__in=services.DONE_STATUSES).order_by("-id")
         qs = self.get_queryset().filter(
-            equipment__lifecycle_stage="COMMISSIONED", next_due_date__lte=services_add_days(today, within)
+            Q(next_due_date__lte=services_add_days(today, within)) | Q(frequency_type="USAGE_HOURS"),
+            equipment__lifecycle_stage="COMMISSIONED",
         ).annotate(
             open_wo_public_id=Subquery(open_wo.values("public_id")[:1]),
             open_wo_number=Subquery(open_wo.values("wo_number")[:1]),
             open_wo_status=Subquery(open_wo.values("status")[:1]),
         ).order_by("next_due_date", "id")
         page = self.paginate_queryset(qs)
+        from decimal import Decimal
+        from apps.allocation.support import usage_hours_totals
+        totals = usage_hours_totals(self.ctx.facility.id,
+                                    [p.equipment_id for p in page if p.frequency_type == "USAGE_HOURS"])
         rows = []
         for p in page:
-            delta = (p.next_due_date - today).days
+            usage = p.frequency_type == "USAGE_HOURS"
+            since = remaining = delta = None
+            if usage:
+                since = totals.get(p.equipment_id, Decimal("0")) - (p.last_performed_usage_hours or Decimal("0"))
+                remaining = p.frequency_value - since
+            else:
+                delta = (p.next_due_date - today).days
             e = p.equipment
             rows.append({
                 "public_id": str(p.public_id), "name": p.name, "priority": p.priority,
                 "frequency_type": p.frequency_type, "frequency_value": p.frequency_value,
                 "next_due_date": p.next_due_date, "last_performed_date": p.last_performed_date,
-                "is_overdue": delta < 0, "days_left": max(delta, 0), "days_overdue": max(-delta, 0),
+                "is_overdue": (remaining <= 0) if usage else delta < 0,
+                "days_left": None if usage else max(delta, 0), "days_overdue": None if usage else max(-delta, 0),
+                "hours_since_last": since, "hours_remaining": remaining,
+                "lead_usage_hours": p.lead_usage_hours if usage else None,
                 "equipment": {"public_id": str(e.public_id), "asset_tag": e.asset_tag, "name": e.name,
                               "operational_state": e.operational_state},
                 "open_work_order": ({"public_id": str(p.open_wo_public_id), "wo_number": p.open_wo_number,
@@ -131,7 +147,8 @@ class MaintenancePlanViewSet(FacilityScopedViewSet):
         self.reject_unknown_fields(request.data, allowed=set())
         plan = self.get_object()
         with transaction.atomic():
-            wo = services.create_pm_work_order(request=request, plan=plan, due_date=plan.next_due_date)
+           wo = services.create_pm_work_order(request=request, plan=plan,
+                                               due_date=plan.next_due_date or services.today_for(self.ctx.facility))
         if wo is None:
             raise Conflict("A work order already exists for this plan and due date.")
         return Response(WorkOrderDetailSerializer(wo, context=self.get_serializer_context()).data, status=201)

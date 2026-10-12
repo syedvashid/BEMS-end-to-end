@@ -25,13 +25,17 @@ def ensure_category_deletable(instance):
 def ensure_location_deletable(instance):
     _block(Location.objects.filter(
         facility_id=instance.facility_id, parent_location_id=instance.pk, is_active=True).count(), "child locations")
-    # Phase 4: active equipment placed here
+    from apps.allocation.support import location_blockers     # Phase 7 (lazy: avoids a cycle)
+    for count, what in location_blockers(instance):
+        _block(count, what)
 
 
 def ensure_department_deletable(instance):
     _block(Location.objects.filter(
         facility_id=instance.facility_id, department_id=instance.pk, is_active=True).count(), "locations")
-    # Phase 4: active equipment owned by this department
+    from apps.allocation.support import department_blockers   # Phase 7
+    for count, what in department_blockers(instance):
+        _block(count, what)
 
 from apps.compliance.gates import vendor_compliance_blockers
 def ensure_vendor_deletable(instance):

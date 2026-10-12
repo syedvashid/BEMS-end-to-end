@@ -12,7 +12,8 @@ from django.core.management.base import BaseCommand, CommandError
 
 from apps.foundation.models import Facility
 from apps.maintenance import services
-from apps.maintenance.models import MaintenancePlan
+from apps.allocation.support import usage_hours_totals
+from apps.maintenance.models import MaintenancePlan, WorkOrder
 
 log = logging.getLogger("bems.scheduler")
 
@@ -48,6 +49,28 @@ class Command(BaseCommand):
                 except Exception as exc:   # one bad plan must not stop the run (e.g. equipment no longer commissioned)
                     errors += 1
                     log.warning("plan %s skipped: %s", plan.public_id, exc)
+                    continue
+                if wo is None:
+                    skipped += 1
+                else:
+                    created += 1
+            uplans = list(MaintenancePlan.objects.filter(
+                facility_id=fac.id, is_active=True, frequency_type="USAGE_HOURS",
+                equipment__lifecycle_stage="COMMISSIONED").order_by("id"))
+            totals = usage_hours_totals(fac.id, [p.equipment_id for p in uplans])
+            for plan in uplans:
+                since = totals.get(plan.equipment_id, 0) - (plan.last_performed_usage_hours or 0)
+                if since < plan.frequency_value - plan.lead_usage_hours:
+                    continue
+                if WorkOrder.objects.filter(maintenance_plan_id=plan.pk, work_order_type="PREVENTIVE").exclude(
+                        status__in=services.DONE_STATUSES).exists():
+                    skipped += 1
+                    continue
+                try:
+                    wo = services.create_pm_work_order(request=request, plan=plan, due_date=today)
+                except Exception as exc:
+                    errors += 1
+                    log.warning("usage plan %s skipped: %s", plan.public_id, exc)
                     continue
                 if wo is None:
                     skipped += 1

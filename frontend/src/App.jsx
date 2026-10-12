@@ -36,6 +36,12 @@ import WarrantiesPage from './pages/WarrantiesPage.jsx'
 import AmcContractsPage from './pages/AmcContractsPage.jsx'
 import LicencesPage from './pages/LicencesPage.jsx'
 import CompliancePage from './pages/CompliancePage.jsx'
+import AvailabilityPage from './pages/AvailabilityPage.jsx'
+import AllocationsPage from './pages/AllocationsPage.jsx'
+import BedsidePage from './pages/BedsidePage.jsx'
+import ReservationsPage from './pages/ReservationsPage.jsx'
+import TransfersPage from './pages/TransfersPage.jsx'
+import UsageLogsPage from './pages/UsageLogsPage.jsx'
 console.log('App module loaded')
 const guard = (code, element) => (
   <PermissionGate code={code} fallback={<AccessDeniedPage />}>{element}</PermissionGate>
@@ -78,6 +84,12 @@ export default function App() {
         <Route path="amc-contracts" element={guard('amc.view', <AmcContractsPage />)} />
         <Route path="licences" element={guard('licence.view', <LicencesPage />)} />
         <Route path="compliance" element={guard('calibration.view', <CompliancePage />)} />
+        <Route path="availability" element={guard('allocation.view', <AvailabilityPage />)} />
+        <Route path="allocations" element={guard('allocation.view', <AllocationsPage />)} />
+        <Route path="bedside" element={guard('allocation.view', <BedsidePage />)} />
+        <Route path="reservations" element={guard('reservation.view', <ReservationsPage />)} />
+        <Route path="transfers" element={guard('transfer.view', <TransfersPage />)} />
+        <Route path="usage-logs" element={guard('usage.view', <UsageLogsPage />)} />
       </Route>
     </Routes>
   )

@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     "apps.equipment",
     "apps.maintenance",
     "apps.compliance",
+     "apps.allocation",
+     "apps.safety",
 ]
 MIDDLEWARE = [
     "apps.core.middleware.RequestIdMiddleware",

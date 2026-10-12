@@ -1,197 +1,223 @@
-with your changes -----in compilance/view.py
 
-    def list(self, request, *args, **kwargs):
-        if not any(self.ctx.has(code) for code in services.TYPE_PERMS.values()):
-            deny(request, self, "list", list(services.TYPE_PERMS.values()))
-        q = request.query_params
-        types = [t.strip().upper() for raw in q.getlist("types") for t in raw.split(",") if t.strip()]
-        bad = [t for t in types if t not in services.TYPE_PERMS]
-        if bad:
-            raise ValidationError({"types": [f"Unknown type {bad[0]}."]})
-        try:
-            within = int(q.get("within_days", 90))
-        except ValueError:
-            raise ValidationError({"within_days": ["Must be a whole number."]})
-        if not 0 <= within <= 365:
-            raise ValidationError({"within_days": ["Must be between 0 and 365."]})
-        bucket = (q.get("bucket") or "").upper() or None
-        if bucket and bucket not in self.BUCKETS:
-            raise ValidationError({"bucket": ["Unknown bucket."]})
-        fac = self.ctx.facility
-        eq_pk = dept_pk = None
-        if q.get("equipment"):
-            eq = _by_public_id(Equipment, q["equipment"], fac.id, "equipment")
-            if eq is None:
-                return self.get_paginated_response(self.paginate_queryset([]))
-            eq_pk = eq.pk
-        if q.get("department"):
-            dept = _by_public_id(Department, q["department"], fac.id, "department")
-            if dept is None:
-                return self.get_paginated_response(self.paginate_queryset([]))
-            dept_pk = dept.pk
-        for key in ("equipment", "department"):
-        |
-
-
-
-and also check these databse logs----
-
+Running 045_incidents.sql ...
 Password for user bems_owner: 
 
+BEGIN
 DO
 CREATE TABLE
 CREATE INDEX
 CREATE INDEX
-psql:db/sql/032_calibration.sql:48: NOTICE:  trigger "trg_calibration_schedules_touch" for relation "calibration_schedules" does not exist, skipping
+CREATE INDEX
+psql:db/sql/045_incidents.sql:83: NOTICE:  trigger "trg_equipment_incidents_touch" for relation "equipment_incidents" does not exist, skipping
 DROP TRIGGER
 CREATE TRIGGER
 GRANT
 CREATE TABLE
-CREATE INDEX
-CREATE INDEX
+INSERT 0 5
 GRANT
-CREATE TABLE
-GRANT
-INSERT 0 1
-Password for user bems_owner: 
-
-CREATE TABLE
-CREATE INDEX
-CREATE INDEX
-psql:db/sql/033_warranties.sql:30: NOTICE:  trigger "trg_warranties_touch" for relation "warranties" does not exist, skipping
+CREATE FUNCTION
+psql:db/sql/045_incidents.sql:114: NOTICE:  trigger "trg_equipment_incidents_status" for relation "equipment_incidents" does not exist, skipping
 DROP TRIGGER
 CREATE TRIGGER
-GRANT
-CREATE TABLE
-CREATE INDEX
-CREATE INDEX
-psql:db/sql/033_warranties.sql:69: NOTICE:  trigger "trg_warranty_claims_touch" for relation "warranty_claims" does not exist, skipping
-DROP TRIGGER
-CREATE TRIGGER
-GRANT
-INSERT 0 1
-Password for user bems_owner: 
-
-CREATE TABLE
-CREATE INDEX
-CREATE INDEX
-CREATE INDEX
-psql:db/sql/034_amc_contracts.sql:43: NOTICE:  trigger "trg_amc_contracts_touch" for relation "amc_contracts" does not exist, skipping
-DROP TRIGGER
-CREATE TRIGGER
-GRANT
 CREATE TABLE
 CREATE INDEX
 GRANT
 INSERT 0 1
+COMMIT
+Completed 045_incidents.sql
+
+Running 046_recalls.sql ...
 Password for user bems_owner: 
 
+BEGIN
 CREATE TABLE
 CREATE INDEX
 CREATE INDEX
-psql:db/sql/035_equipment_licences.sql:31: NOTICE:  trigger "trg_equipment_licences_touch" for relation "equipment_licences" does not exist, skipping
+psql:db/sql/046_recalls.sql:57: NOTICE:  trigger "trg_recall_notices_touch" for relation "recall_notices" does not exist, skipping
+DROP TRIGGER
+CREATE TRIGGER
+GRANT
+CREATE TABLE
+CREATE INDEX
+GRANT
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE FUNCTION
+psql:db/sql/046_recalls.sql:122: NOTICE:  trigger "trg_recall_affected_units_final" for relation "recall_affected_units" does not exist, skipping
+DROP TRIGGER
+CREATE TRIGGER
+psql:db/sql/046_recalls.sql:125: NOTICE:  trigger "trg_recall_affected_units_touch" for relation "recall_affected_units" does not exist, skipping
 DROP TRIGGER
 CREATE TRIGGER
 GRANT
 INSERT 0 1
+COMMIT
+Completed 046_recalls.sql
+
+Running 047_physical_verification.sql ...
 Password for user bems_owner: 
 
-DO
-ALTER TABLE
-DO
+BEGIN
+CREATE TABLE
 CREATE INDEX
-ALTER TABLE
+CREATE FUNCTION
+psql:db/sql/047_physical_verification.sql:64: NOTICE:  trigger "trg_physical_verifications_status" for relation "physical_verifications" does not exist, skipping
+DROP TRIGGER
+CREATE TRIGGER
+psql:db/sql/047_physical_verification.sql:67: NOTICE:  trigger "trg_physical_verifications_touch" for relation "physical_verifications" does not exist, skipping
+DROP TRIGGER
+CREATE TRIGGER
+GRANT
+CREATE TABLE
+CREATE INDEX
+psql:db/sql/047_physical_verification.sql:114: NOTICE:  trigger "trg_physical_verification_items_touch" for relation "physical_verification_items" does not exist, skipping
+DROP TRIGGER
+CREATE TRIGGER
+GRANT
+INSERT 0 1
+COMMIT
+Completed 047_physical_verification.sql
+
+Running 048_holds_extension.sql ...
+Password for user bems_owner: 
+
+BEGIN
 ALTER TABLE
 ALTER TABLE
 DO
 CREATE INDEX
 CREATE INDEX
-CREATE INDEX
 INSERT 0 1
+COMMIT
+Completed 048_holds_extension.sql
+
+Running 049_safety_permissions.sql ...
 Password for user bems_owner: 
 
+BEGIN
+INSERT 0 9
+INSERT 0 39
+INSERT 0 1
+COMMIT
+Completed 049_safety_permissions.sql
 (base) PS C:\Users\aksha\OneDrive\Desktop\HC-apps\BEMS> @'
 >> SELECT version, description
 >> FROM schema_version
->> WHERE version >= '032'
+>> WHERE version >= '045'
 >> ORDER BY version;
 >> 
->> SELECT conrelid::regclass AS tbl, conname, pg_get_constraintdef(oid)
->> FROM pg_constraint
->> WHERE conrelid IN ('equipment_holds'::regclass, 'work_orders'::regclass)
->>   AND contype = 'c'
->> ORDER BY 1, 2;
->> 
->> SELECT table_name, string_agg(privilege_type, ',' ORDER BY privilege_type)
->> FROM information_schema.role_table_grants
->> WHERE grantee = 'bems_app'
->>   AND table_name IN (
->>     'calibration_schedules', 'calibration_records',
->>     'calibration_impact_reviews', 'warranties', 'warranty_claims',
->>     'amc_contracts', 'amc_coverages', 'equipment_licences'
->>   )
->> GROUP BY 1
+>> -- Expect 8 tables
+>> SELECT table_name
+>> FROM information_schema.tables
+>> WHERE table_name IN (
+>>     'equipment_incidents',
+>>     'incident_transitions',
+>>     'incident_events',
+>>     'recall_notices',
+>>     'recall_notice_models',
+>>     'recall_affected_units',
+>>     'physical_verifications',
+>>     'physical_verification_items'
+>> )
 >> ORDER BY 1;
 >> 
->> SELECT r.code, COUNT(*)
+>> -- Equipment-hold source constraints and foreign keys
+>> SELECT conname, pg_get_constraintdef(oid)
+>> FROM pg_constraint
+>> WHERE conrelid = 'equipment_holds'::regclass
+>>   AND (
+>>       (contype = 'c' AND conname LIKE 'ck_equipment_holds_%source%')
+>>       OR conname LIKE 'fk_equipment_holds_%'
+>>   );
+>> 
+>> -- Expect 2 open-hold indexes
+>> SELECT indexname
+>> FROM pg_indexes
+>> WHERE tablename = 'equipment_holds'
+>>   AND indexname LIKE 'ux_equipment_holds_%_open';
+>> 
+>> -- Expect 3 triggers
+>> SELECT tgname, tgrelid::regclass
+>> FROM pg_trigger
+>> WHERE tgname IN (
+>>     'trg_equipment_incidents_status',
+>>     'trg_recall_affected_units_final',
+>>     'trg_physical_verifications_status'
+>> )
+>> AND NOT tgisinternal;
+>> 
+>> -- Incident, recall and verification permission counts
+>> SELECT r.code, COUNT(*) AS permission_count
 >> FROM role_permissions rp
 >> JOIN roles r ON r.id = rp.role_id
 >> JOIN permissions p ON p.id = rp.permission_id
->> WHERE p.module IN ('calibration', 'warranty', 'amc', 'licence')
->> GROUP BY 1
+>> WHERE p.code ~ '^(incident|recall|verification)\.'
+>> GROUP BY r.code
 >> ORDER BY 1;
 >> '@ | & "C:\Program Files\PostgreSQL\17\bin\psql.exe" -h localhost -p 5433 -U bems_owner -d bems_dev_new
 Password for user bems_owner: 
 
- version |                      description                      
----------+-------------------------------------------------------
- 032     | calibration schedules, records, impact reviews
- 033     | warranties and warranty claims
- 034     | AMC contracts and coverages
- 035     | equipment licences
- 036     | phase 5 links: calibration holds, work order coverage
+ version |                 description                  
+---------+----------------------------------------------
+ 045     | equipment incidents
+ 046     | recall notices
+ 047     | physical verifications
+ 048     | equipment holds: incident and recall sources
+ 049     | safety permissions
  900     | DEV ONLY seed
 (6 rows)
 
-       tbl       |                conname                |                                                                       pg_get_constraintdef                                                                       
------------------+---------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------
- work_orders     | ck_work_orders_amc_source             | CHECK (((amc_contract_id IS NULL) OR (coverage_source = 'AMC'::text)))
- work_orders     | ck_work_orders_bd_problem             | CHECK (((work_order_type <> 'BREAKDOWN'::text) OR ((problem_description IS NOT NULL) AND (btrim(problem_description) <> ''::text))))
- work_orders     | ck_work_orders_coverage               | CHECK (((coverage_source IS NULL) OR (coverage_source = ANY (ARRAY['WARRANTY'::text, 'AMC'::text, 'PAID'::text, 'IN_HOUSE'::text]))))
- work_orders     | ck_work_orders_downtime               | CHECK (((downtime_end IS NULL) OR (downtime_start IS NULL) OR (downtime_end >= downtime_start)))
- work_orders     | ck_work_orders_labour                 | CHECK (((labour_cost IS NULL) OR (labour_cost >= (0)::numeric)))
- work_orders     | ck_work_orders_not_own_parent         | CHECK ((parent_work_order_id IS DISTINCT FROM id))
- work_orders     | ck_work_orders_number                 | CHECK ((wo_number ~ '^WO-[0-9]{4}-[0-9]{6}$'::text))
- work_orders     | ck_work_orders_one_coverage_link      | CHECK (((warranty_id IS NULL) OR (amc_contract_id IS NULL)))
- work_orders     | ck_work_orders_pm_due                 | CHECK (((work_order_type <> 'PREVENTIVE'::text) OR (due_date IS NOT NULL)))
- work_orders     | ck_work_orders_priority               | CHECK ((priority = ANY (ARRAY['LOW'::text, 'MEDIUM'::text, 'HIGH'::text, 'CRITICAL'::text])))
- work_orders     | ck_work_orders_rowver                 | CHECK ((row_version >= 1))
- work_orders     | ck_work_orders_standby                | CHECK ((standby_equipment_id IS DISTINCT FROM equipment_id))
- work_orders     | ck_work_orders_status                 | CHECK ((status = ANY (ARRAY['OPEN'::text, 'ASSIGNED'::text, 'IN_PROGRESS'::text, 'WAITING_PARTS'::text, 'COMPLETED'::text, 'CLOSED'::text, 'CANCELLED'::text])))
- work_orders     | ck_work_orders_type                   | CHECK ((work_order_type = ANY (ARRAY['PREVENTIVE'::text, 'BREAKDOWN'::text, 'CORRECTIVE'::text])))
- work_orders     | ck_work_orders_vendor_cost            | CHECK (((vendor_cost IS NULL) OR (vendor_cost >= (0)::numeric)))
- work_orders     | ck_work_orders_warranty_source        | CHECK (((warranty_id IS NULL) OR (coverage_source = 'WARRANTY'::text)))
- equipment_holds | ck_equipment_holds_calibration_source | CHECK (((source_type = 'CALIBRATION'::text) = (calibration_record_id IS NOT NULL)))
- equipment_holds | ck_equipment_holds_reason             | CHECK ((btrim(reason) <> ''::text))
- equipment_holds | ck_equipment_holds_released           | CHECK (((released_at IS NULL) OR (released_at >= started_at)))
- equipment_holds | ck_equipment_holds_rowver             | CHECK ((row_version >= 1))
- equipment_holds | ck_equipment_holds_source_type        | CHECK ((source_type = ANY (ARRAY['WORK_ORDER'::text, 'MANUAL'::text, 'CALIBRATION'::text])))
- equipment_holds | ck_equipment_holds_source_wo          | CHECK (((source_type = 'WORK_ORDER'::text) = (work_order_id IS NOT NULL)))
- equipment_holds | ck_equipment_holds_type               | CHECK ((hold_type = ANY (ARRAY['MAINTENANCE'::text, 'OUT_OF_SERVICE'::text])))
-(23 rows)
-
-         table_name         |      string_agg      
-----------------------------+----------------------
- amc_contracts              | INSERT,SELECT,UPDATE
- amc_coverages              | DELETE,INSERT,SELECT
- calibration_impact_reviews | INSERT,SELECT
- calibration_records        | INSERT,SELECT
- calibration_schedules      | INSERT,SELECT,UPDATE
- equipment_licences         | INSERT,SELECT,UPDATE
- warranties                 | INSERT,SELECT,UPDATE
- warranty_claims            | INSERT,SELECT,UPDATE
+         table_name          
+-----------------------------
+ equipment_incidents
+ incident_events
+ incident_transitions
+ physical_verification_items
+ physical_verifications
+ recall_affected_units
+ recall_notice_models
+ recall_notices
 (8 rows)
 
- code | count 
-------+-------
-(0 rows)
+                conname                |                                                      pg_get_constraintdef                                     
+---------------------------------------+--------------------------------------------------------------------------------------------------------------------------------
+ ck_equipment_holds_source_wo          | CHECK (((source_type = 'WORK_ORDER'::text) = (work_order_id IS NOT NULL)))
+ fk_equipment_holds_equipment          | FOREIGN KEY (facility_id, equipment_id) REFERENCES equipment(facility_id, id)
+ fk_equipment_holds_wo                 | FOREIGN KEY (facility_id, work_order_id) REFERENCES work_orders(facility_id, id)
+ fk_equipment_holds_calibration_record | FOREIGN KEY (facility_id, calibration_record_id) REFERENCES calibration_records(facility_id, id)
+ ck_equipment_holds_calibration_source | CHECK (((source_type = 'CALIBRATION'::text) = (calibration_record_id IS NOT NULL)))
+ ck_equipment_holds_source_type        | CHECK ((source_type = ANY (ARRAY['WORK_ORDER'::text, 'MANUAL'::text, 'CALIBRATION'::text,'INCIDENT'::text, 'RECALL'::text])))
+ fk_equipment_holds_incident           | FOREIGN KEY (facility_id, incident_id) REFERENCES equipment_incidents(facility_id, id)
+ fk_equipment_holds_recall_unit        | FOREIGN KEY (facility_id, recall_unit_id) REFERENCES recall_affected_units(facility_id, id)
+ ck_equipment_holds_incident_source    | CHECK (((source_type = 'INCIDENT'::text) = (incident_id IS NOT NULL)))
+ ck_equipment_holds_recall_source      | CHECK (((source_type = 'RECALL'::text) = (recall_unit_id IS NOT NULL)))
+(10 rows)
+
+              indexname              
+-------------------------------------
+ ux_equipment_holds_wo_type_open
+ ux_equipment_holds_incident_open
+ ux_equipment_holds_recall_unit_open
+(3 rows)
+
+              tgname               |        tgrelid         
+-----------------------------------+------------------------
+ trg_equipment_incidents_status    | equipment_incidents
+ trg_recall_affected_units_final   | recall_affected_units
+ trg_physical_verifications_status | physical_verifications
+(3 rows)
+
+      code       | permission_count 
+-----------------+------------------
+ AUDITOR         |                3
+ BIOMED_ADMIN    |                9
+ BIOMED_ENGINEER |                9
+ DEPARTMENT_USER |                2
+ FINANCE         |                2
+ STORE_OFFICER   |                5
+ SYSTEM_ADMIN    |                9
+(7 rows)
+
+(base) PS C:\Users\aksha\OneDrive\Desktop\HC-apps\BEMS> 

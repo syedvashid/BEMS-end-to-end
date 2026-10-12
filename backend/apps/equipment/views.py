@@ -18,6 +18,8 @@ from .serializers import (
     EquipmentListSerializer, EquipmentSummarySerializer, EquipmentUpdateSerializer, InstallSerializer,
     LabelsSerializer, MoveSerializer, OperationalStateSerializer, RejectSerializer, ref,
 )
+from apps.allocation.equipment_api import EquipmentAllocationActions
+from apps.allocation.support import ensure_not_allocated
 
 SELECT_RELATED = (
     "equipment_model__category", "equipment_model__manufacturer", "owning_department", "current_location",
@@ -38,7 +40,7 @@ def _file_response(content, content_type, filename=None):
     return resp
 
 
-class EquipmentViewSet(FacilityScopedViewSet):
+class EquipmentViewSet(EquipmentAllocationActions, FacilityScopedViewSet):
     queryset = Equipment.objects.all()
     audit_entity_type = "Equipment"
     filterset_class = EquipmentFilter
@@ -57,7 +59,9 @@ class EquipmentViewSet(FacilityScopedViewSet):
       "state_history": "equipment.view", "movements": "equipment.view", "holds": "equipment.view",
         "qr": "equipment.view", "barcode": "equipment.view", "labels": "equipment.view", "scan": "equipment.view",
         "import_template": "equipment.import", "import_dry_run": "equipment.import",
-        "import_confirm": "equipment.import",
+          "import_confirm": "equipment.import",
+        "availability": "allocation.view", "available": "allocation.view", "bedside": "allocation.view",
+        "usage_summary": "usage.view",
     }
 
     # ------------------------------------------------------------ plumbing
@@ -144,9 +148,12 @@ class EquipmentViewSet(FacilityScopedViewSet):
 
     @action(detail=True, methods=["post"])
     def move(self, request, public_id=None):
-        return self._run(request, MoveSerializer, lambda eq, d, v: services.move_equipment(
-            request=request, equipment=eq, expected_version=v, to_location=d["location"],
-            to_department=d.get("department"), reason=d["reason"]))
+        def call(eq, d, v):
+            ensure_not_allocated(eq)        # Phase 7: release the allocation first (checked under the row lock)
+            return services.move_equipment(
+                request=request, equipment=eq, expected_version=v, to_location=d["location"],
+                to_department=d.get("department"), reason=d["reason"])
+        return self._run(request, MoveSerializer, call)
 
     # ------------------------------------------------------------ histories
     @action(detail=True, methods=["get"], url_path="state-history")

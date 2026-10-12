@@ -61,7 +61,9 @@ class MaintenancePlan(FacilityScopedModel):
     default_assignee_user = _fk(User, null=True, blank=True)
     start_date = models.DateField()
     last_performed_date = models.DateField(null=True, blank=True)
-    next_due_date = models.DateField()
+    next_due_date = models.DateField(null=True, blank=True)
+    last_performed_usage_hours = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    lead_usage_hours = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     notes = models.TextField(null=True, blank=True)
 
     class Meta(FacilityScopedModel.Meta):

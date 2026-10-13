@@ -251,6 +251,7 @@ def available_actions(o, ctx):
 
 
 def hold_repr(h):
+    n = h.recall_unit.recall_notice if h.recall_unit_id else None
     return {"public_id": str(h.public_id), "hold_type": h.hold_type, "source_type": h.source_type,
             "reason": h.reason, "started_at": h.started_at, "released_at": h.released_at,
             "release_reason": h.release_reason,
@@ -259,7 +260,10 @@ def hold_repr(h):
             "calibration_record": ({"public_id": str(h.calibration_record.public_id),
                                     "performed_date": h.calibration_record.performed_date,
                                     "result": h.calibration_record.result}
-                                   if h.calibration_record_id else None)}
+                                   if h.calibration_record_id else None),
+            "incident": ({"public_id": str(h.incident.public_id), "incident_number": h.incident.incident_number}
+                         if h.incident_id else None),
+            "recall_notice": ({"public_id": str(n.public_id), "notice_number": n.notice_number} if n else None)}
 
 def _coverage_block(o, ctx, today):
     """Compliance data on a work order, each part only for users who may view it."""

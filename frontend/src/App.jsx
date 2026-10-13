@@ -42,6 +42,18 @@ import BedsidePage from './pages/BedsidePage.jsx'
 import ReservationsPage from './pages/ReservationsPage.jsx'
 import TransfersPage from './pages/TransfersPage.jsx'
 import UsageLogsPage from './pages/UsageLogsPage.jsx'
+import IncidentsPage from './pages/IncidentsPage.jsx'
+import IncidentDetailPage from './pages/IncidentDetailPage.jsx'
+import RecallsPage from './pages/RecallsPage.jsx'
+import RecallDetailPage from './pages/RecallDetailPage.jsx'
+import VerificationsPage from './pages/VerificationsPage.jsx'
+import VerificationRunPage from './pages/VerificationRunPage.jsx'
+import FinanceSummaryPage from './pages/FinanceSummaryPage.jsx'
+import DepreciationPoliciesPage from './pages/DepreciationPoliciesPage.jsx'
+import CondemnationPage from './pages/CondemnationPage.jsx'
+import CondemnationDetailPage from './pages/CondemnationDetailPage.jsx'
+import DisposalsPage from './pages/DisposalsPage.jsx'
+import ReplacementPlanningPage from './pages/ReplacementPlanningPage.jsx'
 console.log('App module loaded')
 const guard = (code, element) => (
   <PermissionGate code={code} fallback={<AccessDeniedPage />}>{element}</PermissionGate>
@@ -90,6 +102,19 @@ export default function App() {
         <Route path="reservations" element={guard('reservation.view', <ReservationsPage />)} />
         <Route path="transfers" element={guard('transfer.view', <TransfersPage />)} />
         <Route path="usage-logs" element={guard('usage.view', <UsageLogsPage />)} />
+        <Route path="incidents" element={guard('incident.view', <IncidentsPage />)} />
+        <Route path="incidents/:publicId" element={guard('incident.view', <IncidentDetailPage />)} />
+        <Route path="recall-notices" element={guard('recall.view', <RecallsPage />)} />
+        <Route path="recall-notices/:publicId" element={guard('recall.view', <RecallDetailPage />)} />
+        <Route path="verifications" element={guard('verification.view', <VerificationsPage />)} />
+        <Route path="verifications/:publicId" element={guard('verification.view', <VerificationRunPage />)} />
+                <Route path="verifications/:publicId" element={guard('verification.view', <VerificationRunPage />)} />
+        <Route path="finance" element={guard('finance.view', <FinanceSummaryPage />)} />
+        <Route path="depreciation-policies" element={guard('finance.view', <DepreciationPoliciesPage />)} />
+        <Route path="condemnation" element={guard('condemnation.view', <CondemnationPage />)} />
+        <Route path="condemnation/:publicId" element={guard('condemnation.view', <CondemnationDetailPage />)} />
+        <Route path="disposals" element={guard('disposal.view', <DisposalsPage />)} />
+        <Route path="replacement-planning" element={guard('finance.view', <ReplacementPlanningPage />)} />
       </Route>
     </Routes>
   )

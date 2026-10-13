@@ -30,4 +30,12 @@ export const MENU = [
   { to: '/reservations', label: 'Reservations', permission: 'reservation.view' },
   { to: '/transfers', label: 'Transfers', permission: 'transfer.view' },
   { to: '/usage-logs', label: 'Usage Logs', permission: 'usage.view' },
+  { to: '/incidents', label: 'Incidents', permission: 'incident.view' },
+  { to: '/recall-notices', label: 'Recalls', permission: 'recall.view' },
+  { to: '/verifications', label: 'Physical Verification', permission: 'verification.view' },
+    { to: '/finance', label: 'Finance', permission: 'finance.view' },
+  { to: '/depreciation-policies', label: 'Depreciation Policies', permission: 'finance.view' },
+  { to: '/condemnation', label: 'Condemnation', permission: 'condemnation.view' },
+  { to: '/disposals', label: 'Disposals', permission: 'disposal.view' },
+  { to: '/replacement-planning', label: 'Replacement Planning', permission: 'finance.view' },
 ]

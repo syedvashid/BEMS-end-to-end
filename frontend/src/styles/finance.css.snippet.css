@@ -1,0 +1,14 @@
+/* ADD TO src/styles/theme.css (colours live only in that file) */
+.fin-cards { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0; }
+.fin-card { flex: 1 1 180px; padding: 12px 14px; border: 1px solid #e3d6e3; border-radius: 8px; background: #fff; }
+.fin-card .fin-card-label { font-size: 12px; color: #6b6b6b; }
+.fin-card .fin-card-value { font-size: 20px; font-weight: 600; color: #7D007D; }
+.fin-blockers { margin: 8px 0; padding-left: 20px; }
+.fin-chart { color: #7D007D; }
+.fin-chart .grid { stroke: #e6e6e6; stroke-width: 1; }
+.fin-chart .axis { fill: #6b6b6b; font-size: 11px; }
+.fin-chart .actual { fill: none; stroke: #7D007D; stroke-width: 2; }
+.fin-chart .proj { fill: none; stroke: #7D007D; stroke-width: 2; stroke-dasharray: 6 4; opacity: 0.7; }
+.fin-section { margin: 20px 0; }
+.fin-timeline { list-style: none; padding: 0; margin: 8px 0; }
+.fin-timeline li { padding: 4px 0; border-left: 3px solid #7D007D; padding-left: 10px; margin-bottom: 6px; }

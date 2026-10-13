@@ -221,3 +221,23 @@ Password for user bems_owner:
 (7 rows)
 
 (base) PS C:\Users\aksha\OneDrive\Desktop\HC-apps\BEMS> 
+
+
+
+
+
+
+/////need to test when i paste the back end of phase 9 give this to phase 9 chat ----
+(venv) (base) PS C:\Users\aksha\OneDrive\Desktop\HC-apps\BEMS\backend> python manage.py check
+C:\Users\aksha\OneDrive\Desktop\HC-apps\BEMS\backend\venv\Lib\site-packages\rest_framework\fields.py:1015: UserWarning: min_value should be an integer or Decimal instance.
+  warnings.warn("min_value should be an integer or Decimal instance.")
+System check identified no issues (0 silenced).
+(venv) (base) PS C:\Users\aksha\OneDrive\Desktop\HC-apps\BEMS\backend> python manage.py run_depreciation --facility MAIN --month 2026-09
+C:\Users\aksha\OneDrive\Desktop\HC-apps\BEMS\backend\venv\Lib\site-packages\rest_framework\fields.py:1015: UserWarning: min_value should be an integer or Decimal instance.
+  warnings.warn("min_value should be an integer or Decimal instance.")
+MAIN: 2026-09-01 processed=0 entries=0 charge=0.00 no_policy=0 no_cost=0 no_start=0 failed=0
+(venv) (base) PS C:\Users\aksha\OneDrive\Desktop\HC-apps\BEMS\backend> python manage.py generate_tco_snapshots --facility MAIN
+C:\Users\aksha\OneDrive\Desktop\HC-apps\BEMS\backend\venv\Lib\site-packages\rest_framework\fields.py:1015: UserWarning: min_value should be an integer or Decimal instance.
+  warnings.warn("min_value should be an integer or Decimal instance.")
+MAIN: 2026-10-12 created=0 skipped_existing=0 considered=0
+(venv) (base) PS C:\Users\aksha\OneDrive\Desktop\HC-apps\BEMS\backend> 

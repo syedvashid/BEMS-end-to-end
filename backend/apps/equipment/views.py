@@ -192,7 +192,7 @@ class EquipmentViewSet(EquipmentAllocationActions, FacilityScopedViewSet):
         from apps.maintenance.serializers import hold_repr
         eq = self.get_object()
         qs = EquipmentHold.objects.filter(facility_id=eq.facility_id, equipment_id=eq.pk) \
-            .select_related("work_order").order_by("-started_at", "-id")
+            .select_related("work_order", "incident", "recall_unit__recall_notice").order_by("-started_at", "-id")
         page = self.paginate_queryset(qs)
         return self.get_paginated_response([hold_repr(h) for h in page])
 
@@ -221,10 +221,7 @@ class EquipmentViewSet(EquipmentAllocationActions, FacilityScopedViewSet):
 
     @action(detail=False, methods=["get"], url_path=r"scan/(?P<code>[A-Za-z0-9_-]{1,100})")
     def scan(self, request, code=None):
-        code = (code or "").strip()
-        eq = self.get_queryset().filter(
-            Q(qr_code_value=code.upper()) | Q(asset_tag=code.upper()) | Q(legacy_asset_id__iexact=code)
-        ).order_by("id").first()
+        eq = services.find_by_code(self.get_queryset(), code)
         if eq is None:
             raise NotFound()
         return Response(self._detail(eq.pk))

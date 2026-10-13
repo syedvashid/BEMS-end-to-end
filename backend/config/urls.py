@@ -15,6 +15,7 @@ urlpatterns = [
     path("api/v1/", include("apps.compliance.urls")),
     path("api/v1/", include("apps.allocation.urls")),
     path("api/v1/", include("apps.safety.urls")),
+    path("api/v1/", include("apps.finance.urls")),
 ]
 
 if settings.DEBUG:  # API docs only in DEBUG

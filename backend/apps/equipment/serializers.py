@@ -143,10 +143,34 @@ class EquipmentDetailSerializer(serializers.BaseSerializer):
             "commissioning_date": rec.commissioning_date,
         }
 
+    @staticmethod
+    def _safety_counts(o, ctx):
+        out = {"open_incidents_count": None, "pending_recalls_count": None}
+        if ctx is None:
+            return out
+        from apps.safety import services as safety   # lazy: avoids a circular import
+        if ctx.has("incident.view"):
+            out["open_incidents_count"] = safety.open_incident_count(o)
+        if ctx.has("recall.view"):
+            out["pending_recalls_count"] = safety.pending_recall_count(o)
+        return out
+
+    @staticmethod
+    def _finance_blocks(o, ctx):
+        out = {"finance": None, "lifecycle_end": None}
+        if ctx is None:
+            return out
+        from apps.finance import lifecycle, services as fin   # lazy: avoids a circular import
+        if ctx.has("finance.view"):
+            out["finance"] = fin.equipment_finance_brief(o)
+        if ctx.has("condemnation.view"):
+            out["lifecycle_end"] = lifecycle.lifecycle_end_brief(o)
+        return out
+
     def to_representation(self, o):
         m = o.equipment_model
         c = m.category
-        pick = lambda a, b: a if a is not None else b   # noqa: E731
+        pick = lambda a, b: a if a is not None else b  # noqa: E731
         return {
             "public_id": str(o.public_id), "asset_tag": o.asset_tag, "qr_code_value": o.qr_code_value,
             "legacy_asset_id": o.legacy_asset_id, "name": o.name, "serial_number": o.serial_number,
@@ -174,6 +198,9 @@ class EquipmentDetailSerializer(serializers.BaseSerializer):
             "effective_risk_class": m.risk_class or c.risk_class,
             "effective_expected_life_years": pick(o.expected_life_years, m.expected_life_years),
             **self._compliance(o),
+            **self._safety_counts(o, getattr(self.context.get("request"), "bems", None)),
+            **self._safety_counts(o, getattr(self.context.get("request"), "bems", None)),
+            **self._finance_blocks(o, getattr(self.context.get("request"), "bems", None)),
             "is_active": o.is_active, "row_version": o.row_version,
             "created_at": o.created_at, "updated_at": o.updated_at,
         }

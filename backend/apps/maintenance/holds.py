@@ -48,13 +48,15 @@ def _hold_audit(request, action, hold, eq, extra=None):
     new = {"equipment": str(eq.public_id), "asset_tag": eq.asset_tag, "hold_type": hold.hold_type,
             "source_type": hold.source_type, "reason": hold.reason,
             "work_order": str(hold.work_order.public_id) if hold.work_order_id else None,
-            "calibration_record": str(hold.calibration_record.public_id) if hold.calibration_record_id else None}
+            "calibration_record": str(hold.calibration_record.public_id) if hold.calibration_record_id else None,
+            "incident": str(hold.incident.public_id) if hold.incident_id else None,
+            "recall_unit": str(hold.recall_unit.public_id) if hold.recall_unit_id else None}
     new.update(extra or {})
     audit.record(request=request, action=action, facility_id=eq.facility_id, entity_type=ENTITY,
                  entity_public_id=hold.public_id, new=new)
 
 
-def place_hold(*, request, equipment, hold_type, source_type, work_order=None, calibration_record=None, reason):
+def place_hold(*, request, equipment, hold_type, source_type, work_order=None, calibration_record=None, incident=None, recall_unit=None, reason):
     uid = request.user.id
     with transaction.atomic():
         eq = eq_services._lock(equipment)
@@ -64,10 +66,15 @@ def place_hold(*, request, equipment, hold_type, source_type, work_order=None, c
             existing = open_holds(eq.facility_id, eq.pk).filter(work_order_id=work_order.pk, hold_type=hold_type).first()
             if existing is not None:
                 return existing
+        for key, obj in (("incident_id", incident), ("recall_unit_id", recall_unit)):
+            if obj is not None:
+                existing = open_holds(eq.facility_id, eq.pk).filter(**{key: obj.pk}).first()
+                if existing is not None:
+                    return existing
         hold = EquipmentHold.objects.create(
             facility_id=eq.facility_id, equipment=eq, hold_type=hold_type, source_type=source_type,
-            work_order=work_order, calibration_record=calibration_record, reason=reason,
-            created_by=uid, updated_by=uid)
+            work_order=work_order, calibration_record=calibration_record, incident=incident,
+            recall_unit=recall_unit, reason=reason, created_by=uid, updated_by=uid)
         _hold_audit(request, "HOLD_PLACED", hold, eq)
         label = "Maintenance" if hold_type == "MAINTENANCE" else "Out-of-service"
         recompute_operational_state(request=request, equipment=eq, reason=f"{label} hold placed: {reason}")

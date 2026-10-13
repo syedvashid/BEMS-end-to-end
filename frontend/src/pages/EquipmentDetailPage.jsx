@@ -7,7 +7,7 @@ import {
 } from '../components/EquipmentActionDialogs'
 import { StageBadge, StateBadge } from '../components/EquipmentBadges'
 import SimplePager from '../components/SimplePager'
-import { Button, Table, useToast } from '../components/ui'
+import { Button, StatusBadge, Table, useToast } from '../components/ui'
 import { EQUIPMENT_TABS } from '../config/equipmentTabs'
 import { useFacility } from '../context/FacilityContext'
 import useFetch from '../hooks/useFetch'
@@ -47,6 +47,35 @@ function Overview({ equipment: e }) {
       <KV label="Risk class">{fmt(e.effective_risk_class)}</KV>
       <KV label="Expected life (years)">{fmt(e.effective_expected_life_years)}</KV>
       <KV label="Legacy entry">{e.is_legacy_entry ? 'Yes' : 'No'}</KV>
+      {(e.open_incidents_count != null || e.pending_recalls_count != null) && (
+        <KV label="Safety">
+          {e.open_incidents_count != null && (
+            <StatusBadge tone={e.open_incidents_count ? 'danger' : 'neutral'}>{e.open_incidents_count} open incident(s)</StatusBadge>
+          )}{' '}
+          {e.pending_recalls_count != null && (
+            <StatusBadge tone={e.pending_recalls_count ? 'warning' : 'neutral'}>{e.pending_recalls_count} pending recall(s)</StatusBadge>
+          )}
+        </KV>
+      )}
+            {e.finance && e.finance.book_value != null && (
+        <KV label="Book value">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(Number(e.finance.book_value))}</KV>
+      )}
+      {e.lifecycle_end?.condemnation_request && (
+        <KV label="Condemnation">
+          <Link to={`/condemnation/${e.lifecycle_end.condemnation_request.public_id}`}>
+            {e.lifecycle_end.condemnation_request.request_number}
+          </Link>{' '}
+          <StatusBadge tone="neutral">{e.lifecycle_end.condemnation_request.status}</StatusBadge>
+        </KV>
+      )}
+      {e.lifecycle_end?.disposal && (
+        <KV label="Disposal">
+          <Link to={`/condemnation/${e.lifecycle_end.condemnation_request?.public_id}`}>
+            {e.lifecycle_end.disposal.disposal_number}
+          </Link>{' '}
+          <StatusBadge tone="neutral">{e.lifecycle_end.disposal.status}</StatusBadge>
+        </KV>
+      )}
       <KV label="Notes">{fmt(e.notes)}</KV>
       {Object.entries(e.custom_attributes || {}).map(([k, v]) => <KV key={k} label={k}>{String(v)}</KV>)}
     </div>

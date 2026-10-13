@@ -11,6 +11,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from django.db import IntegrityError, connection, transaction
+from django.db.models import Q
 from rest_framework.exceptions import NotFound, ValidationError
 
 from apps.core import audit
@@ -79,6 +80,14 @@ def _insert_equipment(facility, asset_tag, uid, fields):
                 continue   # random collision: retry with a new value
             _raise_for_constraint(name)
     raise Conflict()
+
+
+def find_by_code(queryset, code):
+    """Equipment by QR value, asset tag or legacy asset ID inside an already facility-scoped queryset."""
+    code = (code or "").strip()
+    return queryset.filter(
+        Q(qr_code_value=code.upper()) | Q(asset_tag=code.upper()) | Q(legacy_asset_id__iexact=code)
+    ).order_by("id").first()
 
 
 def _lock(equipment, expected_version=None):
@@ -313,4 +322,50 @@ def move_equipment(*, request, equipment, to_location, to_department=None, reaso
     with transaction.atomic():
         eq = _lock(equipment, expected_version)
         _move(request, eq, to_location, to_department, reason)
+    return eq
+
+
+
+def condemn_equipment(*, request, equipment, reason, expected_version=None):
+    uid = request.user.id
+    reason = reason[:1000]
+    with transaction.atomic():
+        eq = _lock(equipment, expected_version)
+        _require_stage(eq, ("COMMISSIONED",), "condemn")
+        old_state = eq.operational_state
+        _change_stage(request, eq, "CONDEMNED", operational_state=None)
+        _history(eq, "LIFECYCLE", "COMMISSIONED", "CONDEMNED", reason, uid)
+        _audit(request, "LIFECYCLE_CHANGE", eq, {"lifecycle_stage": "COMMISSIONED", "operational_state": old_state},
+               {"lifecycle_stage": "CONDEMNED", "operational_state": None, "reason": reason})
+    return eq
+
+
+def revoke_condemnation(*, request, equipment, reason, expected_version=None):
+    from apps.maintenance import holds   # lazy: avoids a cycle
+    uid = request.user.id
+    reason = reason[:1000]
+    with transaction.atomic():
+        eq = _lock(equipment, expected_version)
+        _require_stage(eq, ("CONDEMNED",), "revoke the condemnation of")
+        _change_stage(request, eq, "COMMISSIONED", operational_state="IN_SERVICE")
+        _history(eq, "LIFECYCLE", "CONDEMNED", "COMMISSIONED", reason, uid)
+        _history(eq, "OPERATIONAL", None, "IN_SERVICE", "Condemnation revoked", uid)
+        _audit(request, "LIFECYCLE_CHANGE", eq, {"lifecycle_stage": "CONDEMNED"},
+               {"lifecycle_stage": "COMMISSIONED", "operational_state": "IN_SERVICE", "reason": reason})
+        # remaining open holds still apply
+        holds.recompute_operational_state(request=request, equipment=eq,
+                                          reason="Condemnation revoked: open holds re-applied")
+    return eq
+
+
+def dispose_equipment(*, request, equipment, reason, expected_version=None):
+    uid = request.user.id
+    reason = reason[:1000]
+    with transaction.atomic():
+        eq = _lock(equipment, expected_version)
+        _require_stage(eq, ("CONDEMNED",), "dispose of")
+        _change_stage(request, eq, "DISPOSED")
+        _history(eq, "LIFECYCLE", "CONDEMNED", "DISPOSED", reason, uid)
+        _audit(request, "LIFECYCLE_CHANGE", eq, {"lifecycle_stage": "CONDEMNED"},
+               {"lifecycle_stage": "DISPOSED", "reason": reason})
     return eq

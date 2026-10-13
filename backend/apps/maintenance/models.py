@@ -146,6 +146,8 @@ class EquipmentHold(FacilityScopedModel):
     source_type = models.TextField()
     work_order = _fk(WorkOrder, null=True, blank=True)
     calibration_record = _fk("compliance.CalibrationRecord", null=True, blank=True)
+    incident = _fk("safety.EquipmentIncident", null=True, blank=True)
+    recall_unit = _fk("safety.RecallAffectedUnit", null=True, blank=True)
     reason = models.TextField()
     started_at = models.DateTimeField(default=timezone.now)
     released_at = models.DateTimeField(null=True, blank=True)

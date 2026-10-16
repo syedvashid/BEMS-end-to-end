@@ -111,3 +111,25 @@ def delete_stored(key):
 
 def open_for_read(key):
     return open(resolve_path(key), "rb")
+
+
+def temp_path() -> Path:
+    tmp_dir = storage_root() / ".tmp"
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    return tmp_dir / uuid.uuid4().hex
+
+
+def store_generated_file(src, facility_public_id, content_type) -> StoredFile:
+    """Move a server-generated file (report export) into storage; same key format as uploads."""
+    digest, size = hashlib.sha256(), 0
+    with open(src, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            size += len(chunk)
+            digest.update(chunk)
+    if size == 0:
+        raise validators.bad("The generated file is empty.")
+    key = f"{facility_public_id}/{timezone.now():%Y}/{uuid.uuid4()}"
+    final = resolve_path(key)
+    final.parent.mkdir(parents=True, exist_ok=True)
+    os.replace(src, final)
+    return StoredFile(key, size, digest.hexdigest(), content_type, final.name)

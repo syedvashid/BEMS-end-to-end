@@ -2,7 +2,7 @@ export const MENU = [
   { to: '/facilities', label: 'Facilities', permission: 'facility.view' },
   { to: '/users', label: 'Users', permission: 'user.view' },
   { to: '/roles', label: 'Roles', permission: 'role.view' },
-  { to: '/audit-log', label: 'Audit Log', permission: 'audit.view' },
+  { to: '/audit-log', label: 'Audit Trail', permission: 'audit.view' },
 
   // phase 2
   // { to: '/roles', label: 'Roles', permission: 'role.view' },
@@ -38,4 +38,8 @@ export const MENU = [
   { to: '/condemnation', label: 'Condemnation', permission: 'condemnation.view' },
   { to: '/disposals', label: 'Disposals', permission: 'disposal.view' },
   { to: '/replacement-planning', label: 'Replacement Planning', permission: 'finance.view' },
+    { to: '/dashboards', label: 'Dashboards', permission: 'equipment.view' },
+  { to: '/reports', label: 'Reports', permission: 'report.view' },
+  { to: '/downtime', label: 'Downtime', permission: 'equipment.view' },
+  { to: '/utilization', label: 'Utilization', permission: 'usage.view' },
 ]

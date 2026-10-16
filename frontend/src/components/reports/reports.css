@@ -1,0 +1,43 @@
+/* Layout only. Every colour comes from a variable defined in src/styles/theme.css. */
+.rp-tabs { display: flex; gap: var(--space-1); flex-wrap: wrap; border-bottom: 1px solid var(--color-border); margin: var(--space-3) 0; }
+.rp-tab { background: none; border: 0; padding: var(--space-2) var(--space-3); cursor: pointer; border-bottom: 2px solid transparent; color: var(--color-text); }
+.rp-tab.active { border-bottom-color: var(--color-primary); color: var(--color-primary); font-weight: 600; }
+.rp-toolbar { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end; margin: var(--space-3) 0; }
+.rp-toolbar .field { min-width: 140px; }
+.rp-note { color: var(--color-text-muted); font-size: 13px; }
+.rp-kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4); }
+.rp-kpi { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--space-3) var(--space-4); }
+.rp-kpi-title { font-size: 12px; color: var(--color-text-muted); }
+.rp-kpi-value { font-size: 26px; font-weight: 600; color: var(--color-primary); line-height: 1.2; }
+.rp-kpi-hint { font-size: 12px; color: var(--color-text-muted); }
+.rp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: var(--space-4); }
+.rp-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--space-3) var(--space-4); min-width: 0; }
+.rp-card.wide { grid-column: 1 / -1; }
+.rp-card h3 { margin: 0 0 var(--space-2); font-size: 14px; }
+.rp-scroll { overflow-x: auto; }
+.rp-empty { color: var(--color-text-muted); font-size: 13px; margin: var(--space-3) 0; }
+.rp-svg text { font-size: 11px; fill: var(--color-text-muted); }
+.rp-svg .rp-grid-line { stroke: var(--rp-grid); stroke-width: 1; }
+.rp-svg .rp-value { fill: var(--color-text); }
+.rp-legend { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); font-size: 12px; margin-top: var(--space-2); }
+.rp-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; }
+.rp-donut { display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap; }
+.rp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rp-table th, .rp-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--color-border); vertical-align: top; }
+.rp-table th { color: var(--color-text-muted); font-weight: 600; white-space: nowrap; }
+.rp-layout { display: grid; grid-template-columns: 260px 1fr; gap: var(--space-4); align-items: start; }
+@media (max-width: 900px) { .rp-layout { grid-template-columns: 1fr; } }
+.rp-list { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--space-2); }
+.rp-list h4 { margin: var(--space-2) var(--space-2) var(--space-1); font-size: 12px; color: var(--color-text-muted); text-transform: uppercase; }
+.rp-list button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 6px var(--space-2); border-radius: var(--radius); cursor: pointer; color: var(--color-text); }
+.rp-list button.active { background: var(--color-primary-tint); color: var(--color-primary); font-weight: 600; }
+.rp-params { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-3); margin: var(--space-3) 0; }
+.rp-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; margin: var(--space-3) 0; }
+.rp-summary { display: flex; gap: var(--space-4); flex-wrap: wrap; background: var(--color-primary-tint); border-radius: var(--radius); padding: var(--space-2) var(--space-3); margin: var(--space-3) 0; font-size: 13px; }
+.rp-diff { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+.rp-diff th, .rp-diff td { border-bottom: 1px solid var(--color-border); padding: 4px 6px; text-align: left; vertical-align: top; word-break: break-word; }
+.rp-diff td pre { margin: 0; white-space: pre-wrap; font-family: inherit; }
+.rp-diff tr.changed .prev { background: var(--rp-diff-del); }
+.rp-diff tr.changed .next { background: var(--rp-diff-add); }
+.rp-diff tr.changed th { color: var(--color-primary); }
+.rp-perf { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-2); }

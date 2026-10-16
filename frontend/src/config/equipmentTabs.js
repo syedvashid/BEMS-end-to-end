@@ -16,6 +16,7 @@ export const EQUIPMENT_TABS = [
   { key: 'usage', label: 'Usage', phase: 7 },
   { key: 'safety', label: 'Safety', component: EquipmentSafetyTab },
     { key: 'finance', label: 'Finance', component: EquipmentFinanceTab },
+    { key: 'audit', label: 'Audit' },
 ]
 
 

@@ -81,4 +81,20 @@
 }
 
 
+:root {
+  --rp-c1: #7D007D;
+  --rp-c2: #1F5FA8;
+  --rp-c3: #1E7B3A;
+  --rp-c4: #B26A00;
+  --rp-c5: #B3261E;
+  --rp-c6: #5F6368;
+  --rp-c7: #0E7C86;
+  --rp-c8: #A3478A;
+  --rp-grid: #E8E4EA;
+  --rp-heat: #7D007D;
+  --rp-heat-empty: #F1EEF2;
+  --rp-diff-del: #FBE5E3;
+  --rp-diff-add: #E4F4E8;
+}
+
 }

@@ -14,6 +14,8 @@ import useFetch from '../hooks/useFetch'
 import { fmt, fmtDateTime, labelsRequest, openBlob } from '../utils/equipment'
 import EquipmentMaintenanceTab from '../components/EquipmentMaintenanceTab'
 import OperationalStateDialog from '../components/OperationalStateDialog'
+import EquipmentAuditTab from '../components/equipment/EquipmentAuditTab.jsx'
+import EquipmentPerformanceCard from '../components/equipment/EquipmentPerformanceCard.jsx'
 const KV = ({ label, children }) => (
   <div className="eq-kv"><span className="muted">{label}</span><span>{children}</span></div>
 )
@@ -188,8 +190,14 @@ export default function EquipmentDetailPage() {
   const t = can('equipment.transition')
   const stage = e.lifecycle_stage
 
-  const builtIn = {
-    overview: <Overview equipment={e} />,
+    const builtIn = {
+    overview: (
+      <>
+        <Overview equipment={e} />
+        {can('equipment.view') && <EquipmentPerformanceCard equipmentId={e.public_id} />}
+      </>
+    ),
+    audit: <EquipmentAuditTab equipmentId={e.public_id} />,
     installation: <Installation equipment={e} />,
     status: <History equipment={e} kind="state-history" />,
     movements: <History equipment={e} kind="movements" />,
@@ -216,7 +224,7 @@ export default function EquipmentDetailPage() {
       </div>
 
       <div className="eq-tabs">
-        {EQUIPMENT_TABS.map((x) => (
+         {EQUIPMENT_TABS.filter((x) => x.key !== 'audit' || can('audit.view')).map((x) => (
           <button key={x.key} type="button" className={`eq-tab${tab === x.key ? ' active' : ''}`} onClick={() => setTab(x.key)}>{x.label}</button>
         ))}
       </div>

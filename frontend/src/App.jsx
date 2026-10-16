@@ -54,6 +54,12 @@ import CondemnationPage from './pages/CondemnationPage.jsx'
 import CondemnationDetailPage from './pages/CondemnationDetailPage.jsx'
 import DisposalsPage from './pages/DisposalsPage.jsx'
 import ReplacementPlanningPage from './pages/ReplacementPlanningPage.jsx'
+
+import DashboardsPage from './pages/DashboardsPage.jsx'
+import DowntimePage from './pages/DowntimePage.jsx'
+import UtilizationPage from './pages/UtilizationPage.jsx'
+import ReportCenterPage from './pages/ReportCenterPage.jsx'
+import AuditTrailPage from './pages/AuditTrailPage.jsx'
 console.log('App module loaded')
 const guard = (code, element) => (
   <PermissionGate code={code} fallback={<AccessDeniedPage />}>{element}</PermissionGate>
@@ -69,7 +75,8 @@ export default function App() {
         <Route path="users" element={guard('user.view', <UsersPage />)} />
         <Route path="roles" element={guard('role.view', <RolesPage />)} />
         <Route path="roles/:publicId" element={guard('role.view', <RoleDetailPage />)} />
-        <Route path="audit-log" element={guard('audit.view', <AuditLogPage />)} />
+        <Route path="audit-log" element={guard('audit.view', <AuditTrailPage />)} />
+        
         <Route path="health" element={<HealthPage />} />
         <Route path="*" element={<NotFoundPage />} />
           //phase 2
@@ -115,6 +122,11 @@ export default function App() {
         <Route path="condemnation/:publicId" element={guard('condemnation.view', <CondemnationDetailPage />)} />
         <Route path="disposals" element={guard('disposal.view', <DisposalsPage />)} />
         <Route path="replacement-planning" element={guard('finance.view', <ReplacementPlanningPage />)} />
+                <Route path="dashboards" element={<DashboardsPage />} />
+        <Route path="dashboards/:name" element={<DashboardsPage />} />
+        <Route path="reports" element={guard('report.view', <ReportCenterPage />)} />
+        <Route path="downtime" element={guard('equipment.view', <DowntimePage />)} />
+        <Route path="utilization" element={guard('usage.view', <UtilizationPage />)} />
       </Route>
     </Routes>
   )

@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     "apps.allocation",
     "apps.safety",
     "apps.finance",
+    "apps.reports",
+    
 ]
 MIDDLEWARE = [
     "apps.core.middleware.RequestIdMiddleware",
@@ -85,6 +87,13 @@ BEMS_STORAGE_ROOT = env("BEMS_STORAGE_ROOT", "")   # absolute path OUTSIDE the p
 BEMS_UPLOAD_MAX_MB = int(env("BEMS_UPLOAD_MAX_MB", "20"))
 BEMS_DOWNLOAD_LINK_TTL_SECONDS = int(env("BEMS_DOWNLOAD_LINK_TTL_SECONDS", "120"))
 
+
+
+
+BEMS_REPORT_INLINE_ROWS = int(env("BEMS_REPORT_INLINE_ROWS", "5000"))
+BEMS_REPORT_MAX_ROWS = int(env("BEMS_REPORT_MAX_ROWS", "50000"))
+BEMS_REPORT_PDF_MAX_ROWS = int(env("BEMS_REPORT_PDF_MAX_ROWS", "2000"))
+BEMS_REPORT_RETENTION_DAYS = int(env("BEMS_REPORT_RETENTION_DAYS", "14"))
 REST_FRAMEWORK = {
     # DEV ONLY authentication; the future real auth replaces this one line + dev_auth.py.
     "DEFAULT_AUTHENTICATION_CLASSES": ["apps.foundation.dev_auth.DevHeaderAuthentication"],

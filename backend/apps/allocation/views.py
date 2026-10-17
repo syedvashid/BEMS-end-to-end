@@ -79,7 +79,7 @@ class AllocationViewSet(NamedListMixin, FacilityScopedViewSet):
                                notes=d.get("release_notes"),
                                return_to_previous_location=d["return_to_previous_location"])
         return Response({**self.out(res["allocation"]), "suggest_breakdown": res["suggest_breakdown"],
-                         "moved_back": res["moved_back"]})
+                         "moved_back": res["moved_back"], "charges": res["charges"]})
 
 
 # ================================================================== reservations
@@ -137,6 +137,10 @@ class UsageLogViewSet(NamedListMixin, FacilityScopedViewSet):
                             "update": "usage.change", "partial_update": "usage.change", "destroy": "usage.delete"}
     render = staticmethod(usage_repr)
 
+    def check_can_modify(self, instance, action):          # delete gate (Phase 11); the update gate is in save_usage_log
+        from apps.billing.gates import ensure_usage_log_unbilled
+        ensure_usage_log_unbilled(instance)
+
     def create(self, request, *args, **kwargs):
         ser = UsageLogWriteSerializer(data=request.data, context=self.get_serializer_context())
         ser.is_valid(raise_exception=True)
@@ -146,7 +150,7 @@ class UsageLogViewSet(NamedListMixin, FacilityScopedViewSet):
         if eq is None:
             raise ValidationError({"equipment": ["This field is required."]})
         u = services.save_usage_log(request=request, equipment=eq, data=d)
-        return Response(self.out(u), status=201)
+        return Response({**self.out(u), "charges": getattr(u, "charges", None)}, status=201)
 
     def update(self, request, *args, **kwargs):          # PUT and PATCH are both partial
         kwargs.pop("partial", None)

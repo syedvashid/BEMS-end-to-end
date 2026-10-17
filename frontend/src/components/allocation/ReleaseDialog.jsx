@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import {
   ApiAlert, Button, Check, FormField, Modal, api, fe, nn, toOpts, useAction, useForm,
 } from './shared'
+import ChargePreview from '../billing/ChargePreview.jsx'
+import ChargeResult from '../billing/ChargeResult.jsx'
 
 const CONDITIONS = [['GOOD', 'Good'], ['NEEDS_CLEANING', 'Needs cleaning'], ['DAMAGED', 'Damaged']]
 
@@ -15,14 +17,17 @@ export default function ReleaseDialog({ allocation, onClose, onDone }) {
       condition_on_release: v.condition_on_release, release_notes: nn(v.release_notes),
       return_to_previous_location: v.back,
     })
-    if (r.data.suggest_breakdown) setResult(r.data); else onDone(r.data)
+    const c = r.data.charges
+    const showCharges = c && (c.warning || (c.created || []).length || (c.not_billable || []).length)
+    if (r.data.suggest_breakdown || showCharges) setResult(r.data); else onDone(r.data)
   })
   if (result) {
     return (
       <Modal title="Equipment released" onClose={() => onDone(result)}
         footer={<Button variant="primary" onClick={() => onDone(result)}>Close</Button>}>
-        <div className="alert alert-warning">The equipment was released as damaged. No work order was created.</div>
-        <Link to={`/work-orders?breakdown=${allocation.equipment.public_id}`} onClick={() => onDone(result)}>Report breakdown</Link>
+        {result.suggest_breakdown && <div className="alert alert-warning">The equipment was released as damaged. No work order was created.</div>}
+        <ChargeResult charges={result.charges} />
+        {result.suggest_breakdown && <Link to={`/work-orders?breakdown=${allocation.equipment.public_id}`} onClick={() => onDone(result)}>Report breakdown</Link>}
       </Modal>
     )
   }
@@ -36,8 +41,9 @@ export default function ReleaseDialog({ allocation, onClose, onDone }) {
       <FormField label="Notes" as="textarea" {...bind('release_notes')} error={fe(error, 'release_notes')} />
       {allocation.previous_location && (
         <Check label={`Return to previous location (${allocation.previous_location.name})`} checked={v.back}
-          onChange={(e) => setV((p) => ({ ...p, back: e.target.checked }))} />
+         onChange={(e) => setV((p) => ({ ...p, back: e.target.checked }))} />
       )}
+      <ChargePreview allocationId={allocation.public_id} />
     </Modal>
   )
 }

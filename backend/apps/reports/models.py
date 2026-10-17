@@ -21,6 +21,7 @@ class EquipmentDailyStat(models.Model):
     allocated_minutes = models.IntegerField(default=0)
     session_count = models.IntegerField(default=0)
     breakdown_count = models.IntegerField(default=0)
+    billed_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     computed_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

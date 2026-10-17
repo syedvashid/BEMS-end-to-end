@@ -23,6 +23,8 @@ def ensure_category_deletable(instance):
     from apps.finance.models import DepreciationPolicy   # Phase 9 (lazy)
     _block(DepreciationPolicy.objects.filter(
         facility_id=instance.facility_id, category_id=instance.pk, is_active=True).count(), "depreciation policies")
+    from apps.billing.gates import category_mapping_count   # Phase 11 (lazy)
+    _block(category_mapping_count(instance), "charge mappings")
 
 
 def ensure_location_deletable(instance):

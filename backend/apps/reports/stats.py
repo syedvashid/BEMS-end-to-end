@@ -1,7 +1,7 @@
 """Daily statistics rebuild (B2). Idempotent: delete-and-insert per batch inside one transaction."""
 import logging
 import time
-
+from decimal import Decimal
 from django.db import connection, transaction
 from django.db.models import Max
 from django.utils import timezone
@@ -13,6 +13,9 @@ from apps.equipment.models import EquipmentCommissioning
 
 from .downtime import compute_rows
 from .models import EquipmentDailyStat
+from django.db.models import Max, Sum
+
+
 
 log = logging.getLogger(__name__)
 LOCK_NS = 7101
@@ -37,6 +40,18 @@ def _candidate_ids(facility, date_to, equipment):
     return sorted(set(q.values_list("equipment_id", flat=True)))
 
 
+
+def _billed_by_day(facility, equipment_ids, date_from, date_to):
+    """Net billed amount per (equipment, charge date) from APPROVED and REVERSED records. A reversal record is
+    APPROVED with a negative amount, so a reversed charge nets to zero. Pending and cancelled are excluded."""
+    from apps.billing.models import ChargeRecord   # Phase 11 (lazy)
+    rows = (ChargeRecord.objects.filter(
+        facility_id=facility.id, equipment_id__in=equipment_ids, charge_date__gte=date_from,
+        charge_date__lte=date_to, status__in=("APPROVED", "REVERSED"))
+        .values_list("equipment_id", "charge_date").annotate(s=Sum("amount")).order_by())
+    return {(e, d): s for e, d, s in rows}
+
+
 def rebuild_daily_stats(facility, date_from, date_to, equipment=None, request=None, batch_size=500):
     if date_to < date_from:
         raise ValidationError({"to": ["Must not be before the start date."]})
@@ -55,6 +70,9 @@ def rebuild_daily_stats(facility, date_from, date_to, equipment=None, request=No
         for i in range(0, len(ids), batch_size):
             batch = ids[i:i + batch_size]
             rows = compute_rows(facility, batch, date_from, date_to)
+            billed = _billed_by_day(facility, batch, date_from, date_to)
+            for r in rows:
+                r["billed_amount"] = billed.get((r["equipment_id"], r["stat_date"]), Decimal("0"))
             now = timezone.now()
             with transaction.atomic():
                 EquipmentDailyStat.objects.filter(

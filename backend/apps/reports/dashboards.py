@@ -353,7 +353,16 @@ def finance(facility, ctx, q):
     labour, parts = _monthly_costs(facility, tz, m0)
     widgets.append(_w("maint_month", "Monthly maintenance cost", "line", {"labels": labels, "series": [{
         "name": "Labour + vendor + parts",
-        "values": [_f(sum(labour.get(m, (ZERO, ZERO)), ZERO) + parts.get(m, ZERO)) for m in months]}]}))
+       "values": [_f(sum(labour.get(m, (ZERO, ZERO)), ZERO) + parts.get(m, ZERO)) for m in months]}]}))
+    if ctx.has("charge.view"):
+        from apps.billing.models import ChargeRecord   # Phase 11 (lazy)
+        net = defaultdict(float)
+        for m, s in (ChargeRecord.objects.filter(
+                facility_id=facility.id, is_active=True, charge_date__gte=m0, status__in=("APPROVED", "REVERSED"))
+                .annotate(m=TruncMonth("charge_date")).values_list("m").annotate(s=Sum("amount")).order_by()):
+            net[m.replace(day=1)] = _f(s)
+        widgets.append(_w("monthly_charges", "Monthly net charges (approved)", "line", {
+            "labels": labels, "series": [{"name": "Net charges", "values": [net.get(m, 0.0) for m in months]}]}))
     return widgets
 
 

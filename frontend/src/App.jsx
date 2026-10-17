@@ -60,6 +60,9 @@ import DowntimePage from './pages/DowntimePage.jsx'
 import UtilizationPage from './pages/UtilizationPage.jsx'
 import ReportCenterPage from './pages/ReportCenterPage.jsx'
 import AuditTrailPage from './pages/AuditTrailPage.jsx'
+import ChargeItemsPage from './pages/ChargeItemsPage.jsx'
+import ChargeMappingsPage from './pages/ChargeMappingsPage.jsx'
+import ChargeRecordsPage from './pages/ChargeRecordsPage.jsx'
 console.log('App module loaded')
 const guard = (code, element) => (
   <PermissionGate code={code} fallback={<AccessDeniedPage />}>{element}</PermissionGate>
@@ -127,6 +130,9 @@ export default function App() {
         <Route path="reports" element={guard('report.view', <ReportCenterPage />)} />
         <Route path="downtime" element={guard('equipment.view', <DowntimePage />)} />
         <Route path="utilization" element={guard('usage.view', <UtilizationPage />)} />
+         <Route path="charge-items" element={guard('charge.view', <ChargeItemsPage />)} />
+        <Route path="charge-mappings" element={guard('charge.view', <ChargeMappingsPage />)} />
+        <Route path="charge-records" element={guard('charge.view', <ChargeRecordsPage />)} />
       </Route>
     </Routes>
   )

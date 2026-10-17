@@ -2,10 +2,12 @@ import { useState } from 'react'
 import SimplePager from '../components/SimplePager'
 import UsageLogModal from '../components/allocation/UsageLogModal'
 import { Button, EqLink, FormField, Table, api, clean, fmtDateTime, useFetch } from '../components/allocation/shared'
-import { useToast } from '../components/ui'
+// import { useToast } from '../components/ui'
 import { useFacility } from '../context/FacilityContext'
 import '../styles/maintenance.css'
 import '../styles/allocation.css'
+import { Modal, useToast } from '../components/ui'
+import ChargeResult from '../components/billing/ChargeResult.jsx'
 
 export default function UsageLogsPage() {
   const { can } = useFacility()
@@ -13,12 +15,14 @@ export default function UsageLogsPage() {
   const [page, setPage] = useState(1)
   const [f, setF] = useState({ search: '', date_from: '', date_to: '' })
   const [modal, setModal] = useState(null)
+  const [charges, setCharges] = useState(null)
+  const hasCharges = charges && (charges.warning || (charges.created || []).length || (charges.not_billable || []).length)
   const set = (k) => (e) => { setPage(1); setF((s) => ({ ...s, [k]: e.target.value })) }
   const res = useFetch('/usage-logs/', clean({ ...f, page, page_size: 20 }))
   const remove = async (u) => {
     if (!window.confirm('Delete this usage log?')) return
     try { await api.delete(`/usage-logs/${u.public_id}/`, { params: { row_version: u.row_version } }); toast.success('Deleted.'); res.reload() }
-    catch { toast.error('Could not delete the usage log.') }
+   catch (e) { toast.error(e?.response?.data?.error?.message || 'Could not delete the usage log.') }
   }
   return (
     <section>
@@ -46,7 +50,13 @@ export default function UsageLogsPage() {
       ]} />
       <SimplePager page={page} count={res.data?.count} pageSize={20} onPage={setPage} />
       {modal && <UsageLogModal log={modal === 'new' ? null : modal} onClose={() => setModal(null)}
-        onDone={() => { setModal(null); toast.success('Saved.'); res.reload() }} />}
+       onDone={(saved) => { setModal(null); toast.success('Saved.'); setCharges(saved?.charges || null); res.reload() }} />}
+      {hasCharges && (
+        <Modal title="Charges" onClose={() => setCharges(null)}
+          footer={<Button variant="primary" onClick={() => setCharges(null)}>Close</Button>}>
+          <ChargeResult charges={charges} />
+        </Modal>
+      )}
     </section>
   )
 }

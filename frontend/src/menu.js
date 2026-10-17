@@ -42,4 +42,7 @@ export const MENU = [
   { to: '/reports', label: 'Reports', permission: 'report.view' },
   { to: '/downtime', label: 'Downtime', permission: 'equipment.view' },
   { to: '/utilization', label: 'Utilization', permission: 'usage.view' },
+  { to: '/charge-items', label: 'Charge Items', permission: 'charge.view' },
+  { to: '/charge-mappings', label: 'Charge Mappings', permission: 'charge.view' },
+  { to: '/charge-records', label: 'Charge Records', permission: 'charge.view' },
 ]

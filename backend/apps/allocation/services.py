@@ -334,7 +334,10 @@ def release(*, request, allocation, condition, notes=None, return_to_previous_lo
         a.equipment = eq
         audit.record(request=request, action="RELEASE", facility_id=fid, entity_type="EquipmentAllocation",
                      entity_public_id=a.public_id, new=_alloc_audit(a))
-    return {"allocation": a, "suggest_breakdown": condition == "DAMAGED", "moved_back": moved_back}
+    from apps.billing.services import safe_charges_for_allocation   # Phase 11: never raises, never blocks the release
+    charges = safe_charges_for_allocation(a, request=request)
+    return {"allocation": a, "suggest_breakdown": condition == "DAMAGED", "moved_back": moved_back,
+            "charges": charges}
 
 
 # ------------------------------------------------------------------ reservations
@@ -510,6 +513,8 @@ def save_usage_log(*, request, equipment, data, instance=None, expected_version=
                         raise NotFound()
                     if expected_version is not None and u.row_version != expected_version:
                         raise StaleVersion(current_row_version=u.row_version)
+                    from apps.billing.gates import ensure_usage_log_unbilled   # Phase 11
+                    ensure_usage_log_unbilled(u)
                     before = _usage_audit(u)
                     for k, v in fields.items():
                         setattr(u, k, v)
@@ -530,6 +535,9 @@ def save_usage_log(*, request, equipment, data, instance=None, expected_version=
                      previous=before, new=_usage_audit(u),
                      changed_fields=None if instance is None else audit.diff(before, _usage_audit(u)))
     u.refresh_from_db()
+    if instance is None:
+        from apps.billing.services import safe_charges_for_usage_log   # Phase 11: never raises
+        u.charges = safe_charges_for_usage_log(u, request=request)
     return u
 
 
